@@ -1,4 +1,4 @@
-const PLAYERS = [
+export const PLAYERS = [
   {
     "name": "Matěj Kovář",
     "nationality": "République Tchèque",
