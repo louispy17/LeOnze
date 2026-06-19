@@ -115,6 +115,7 @@ export default function Draft({ session, picks, onPick, onEnd }) {
   const [filterNat, setFilterNat] = useState('')
   const [filterPos, setFilterPos] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
+  const [confettis, setConfettis] = useState([])
 
   const players = session.players
 
@@ -177,6 +178,7 @@ export default function Draft({ session, picks, onPick, onEnd }) {
           turn_index: totalPicks
         })
         setStatus({ type: 'ok', msg: `✅ ${result.name} (${result.position}, ${result.nationality})` })
+        launchConfetti(myColor)
         setInput('')
         if (myTeam.length + 1 >= MAX_PER_TEAM) {
           const allNowDone = players.every(p => p === myName
@@ -194,6 +196,19 @@ export default function Draft({ session, picks, onPick, onEnd }) {
   const myIndex = players.indexOf(myName)
   const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
   const myTeam = teamsByPlayer[myName] || []
+
+  function launchConfetti(color) {
+    const items = Array.from({ length: 32 }, (_, i) => ({
+      id: Date.now() + i,
+      x: Math.random() * 100,
+      color: [color, '#fff', '#ffd700', '#ff6b6b', '#4ecdc4'][Math.floor(Math.random() * 5)],
+      size: 6 + Math.random() * 8,
+      delay: Math.random() * 0.4,
+      rotate: Math.random() * 360,
+    }))
+    setConfettis(items)
+    setTimeout(() => setConfettis([]), 1800)
+  }
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href)
@@ -232,13 +247,52 @@ export default function Draft({ session, picks, onPick, onEnd }) {
           <p style={{ textAlign: 'center', fontSize: 11, color: '#2d3748', marginTop: '1.5rem' }}>
             Partage le lien pour inviter tes potes
           </p>
+          <div style={{ marginTop: '2rem', background: '#0d1117', border: '1px solid #1a2332', borderRadius: 12, padding: '16px 18px' }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: '#4a5568', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>📋 Règles du jeu</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[
+                ['🔄', 'Draft en serpentin', 'J1→J2→J3→J4→J4→J3→J2→J1...'],
+                ['👤', '1 pick par tour', 'Chacun choisit un joueur à la fois'],
+                ['🌍', 'Max 2 par nationalité', 'Tu ne peux pas avoir 3 joueurs du même pays'],
+                ['🚫', 'Joueur bloqué', 'Un joueur pris est indisponible pour tous'],
+                ['⚽', 'CDM 2026 uniquement', 'Seuls les 1249 joueurs qualifiés sont valides'],
+                ['🏆', 'Objectif', 'Construire le meilleur XI possible — 11 joueurs'],
+              ].map(([icon, title, desc]) => (
+                <div key={title} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{icon}</span>
+                  <div>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#9ca3af' }}>{title} — </span>
+                    <span style={{ fontSize: 12, color: '#4a5568' }}>{desc}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080c10', color: '#fff', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: '#080c10', color: '#fff', fontFamily: 'system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
+      {/* Confettis */}
+      {confettis.map(c => (
+        <div key={c.id} style={{
+          position: 'fixed', top: '-10px', left: `${c.x}%`,
+          width: c.size, height: c.size,
+          background: c.color,
+          borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+          transform: `rotate(${c.rotate}deg)`,
+          animation: `confettiFall 1.6s ease-in ${c.delay}s forwards`,
+          zIndex: 999, pointerEvents: 'none',
+        }} />
+      ))}
+      <style>{`
+        @keyframes confettiFall {
+          0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+          100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+      `}</style>
       {/* Header */}
       <div style={{ background: '#0d1117', borderBottom: '1px solid #1a2332', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
