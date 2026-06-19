@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { validatePlayer, PLAYERS } from './players.js'
 
 const MAX_PER_TEAM = 11
@@ -103,7 +103,25 @@ function FootballPitch({ team, color, isActive }) {
   )
 }
 
-export default function Draft({ session, picks, onPick, onEnd }) {
+function Stars({ value, onChange, disabled, size = 18 }) {
+  const [hovered, setHovered] = useState(null)
+  const display = hovered ?? value ?? 0
+  return (
+    <div style={{ display: 'flex', gap: 1 }}>
+      {[1,2,3,4,5].map(n => (
+        <span key={n}
+          onMouseEnter={() => !disabled && setHovered(n)}
+          onMouseLeave={() => !disabled && setHovered(null)}
+          onClick={() => !disabled && onChange?.(n)}
+          style={{ cursor: disabled ? 'default' : 'pointer', fontSize: size, lineHeight: 1, color: n <= display ? '#f59e0b' : '#374151', userSelect: 'none' }}>
+          ★
+        </span>
+      ))}
+    </div>
+  )
+}
+
+export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate }) {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -130,6 +148,27 @@ export default function Draft({ session, picks, onPick, onEnd }) {
 
   const allDone = players.every(p => (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
   const totalPicks = picks.length
+
+  useEffect(() => {
+    if (allDone) setViewTab('results')
+  }, [allDone])
+
+  const globalNatCount = useMemo(() => {
+    const count = {}
+    picks.forEach(p => { count[p.nationality] = (count[p.nationality] || 0) + 1 })
+    return count
+  }, [picks])
+
+  const teamScores = useMemo(() => {
+    const scores = {}
+    players.forEach(p => {
+      const teamPicks = teamsByPlayer[p] || []
+      scores[p] = ratings
+        .filter(r => teamPicks.some(pick => pick.id === r.pick_id))
+        .reduce((s, r) => s + r.rating, 0)
+    })
+    return scores
+  }, [players, teamsByPlayer, ratings])
 
   function currentTurnPlayer() {
     const n = players.length
@@ -165,7 +204,8 @@ export default function Draft({ session, picks, onPick, onEnd }) {
       const result = validatePlayer({
         playerName: input.trim(),
         team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
-        usedPlayers
+        usedPlayers,
+        allPicks: picks
       })
       if (!result.valid) {
         setStatus({ type: 'err', msg: '❌ ' + (result.reason || 'Joueur invalide') })
@@ -365,7 +405,7 @@ export default function Draft({ session, picks, onPick, onEnd }) {
                   onClick={() => { if (isMyTurn) { setInput(p.name); setShowPlayers(false) } }}>
                   <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 6px', color: '#6b7280', minWidth: 32, textAlign: 'center', fontWeight: 600 }}>{p.position}</span>
                   <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0' }}>{p.name}</span>
-                  <span style={{ fontSize: 11, color: '#4a5568' }}>{p.nationality}</span>
+                  <span style={{ fontSize: 11, color: (globalNatCount[p.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>{p.nationality}</span>
                   {isMyTurn && <span style={{ fontSize: 10, color: myColor, opacity: 0.7 }}>↑ choisir</span>}
                 </div>
               ))}
@@ -426,10 +466,123 @@ export default function Draft({ session, picks, onPick, onEnd }) {
             {p} {p === myName ? '(toi)' : ''} · {(teamsByPlayer[p] || []).length}/11
           </button>
         ))}
+        {allDone && (
+          <button onClick={() => setViewTab('results')}
+            style={{
+              background: viewTab === 'results' ? '#ffd700' : '#0d1117',
+              border: `1px solid ${viewTab === 'results' ? '#ffd700' : '#1a2332'}`,
+              borderRadius: 8, padding: '6px 14px', color: viewTab === 'results' ? '#000' : '#9ca3af',
+              fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0
+            }}>
+            🏆 Résultats
+          </button>
+        )}
       </div>
 
+      {/* Vue résultats & notation */}
+      {viewTab === 'results' && (() => {
+        const sortedByScore = [...players].sort((a, b) => (teamScores[b] || 0) - (teamScores[a] || 0))
+        const maxPossible = 5 * MAX_PER_TEAM * (players.length - 1)
+        const medals = ['🥇', '🥈', '🥉', '4️⃣']
+        return (
+          <div style={{ padding: '0 16px 32px' }}>
+            {/* Leaderboard */}
+            <div style={{ background: '#0d1117', border: '1px solid #1a2332', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
+              <p style={{ fontSize: 12, color: '#4a5568', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>Classement</p>
+              {sortedByScore.map((p, rank) => {
+                const score = teamScores[p] || 0
+                const idx = players.indexOf(p)
+                const color = PLAYER_COLORS[idx]
+                const pct = maxPossible > 0 ? Math.min((score / maxPossible) * 100, 100) : 0
+                return (
+                  <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: rank < sortedByScore.length - 1 ? 10 : 0 }}>
+                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{medals[rank]}</span>
+                    <span style={{ color, fontWeight: 700, fontSize: 14, minWidth: 70 }}>{p}{p === myName ? ' (toi)' : ''}</span>
+                    <div style={{ flex: 1, background: '#1a2332', borderRadius: 4, height: 6 }}>
+                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.5s ease' }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: '#9ca3af', minWidth: 48, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                      {score > 0 ? `⭐ ${score}` : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Équipes des autres — notation interactive */}
+            {players.filter(p => p !== myName).map(p => {
+              const pIdx = players.indexOf(p)
+              const color = PLAYER_COLORS[pIdx]
+              const team = teamsByPlayer[p] || []
+              const rated = ratings.filter(r => team.some(pick => pick.id === r.pick_id) && r.rated_by === myName).length
+              return (
+                <div key={p} style={{ background: '#0d1117', border: `1px solid ${color}33`, borderRadius: 10, marginBottom: 12 }}>
+                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #1a2332', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                    <span style={{ fontWeight: 700, fontSize: 14 }}>Équipe de {p}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: 11, color: rated === team.length ? '#4ade80' : '#4a5568' }}>
+                      {rated}/{team.length} notés
+                    </span>
+                  </div>
+                  {team.map(pick => {
+                    const myRating = ratings.find(r => r.pick_id === pick.id && r.rated_by === myName)
+                    const allPickRatings = ratings.filter(r => r.pick_id === pick.id)
+                    const avg = allPickRatings.length > 0
+                      ? allPickRatings.reduce((s, r) => s + r.rating, 0) / allPickRatings.length
+                      : null
+                    return (
+                      <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #0f1923' }}>
+                        <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
+                          {pick.position}
+                        </span>
+                        <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {pick.player_name}
+                        </span>
+                        <Stars value={myRating?.rating} onChange={v => onRate(pick.id, myName, v)} size={17} />
+                        <span style={{ fontSize: 10, color: avg !== null ? '#6b7280' : '#2d3748', minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
+                          {avg !== null ? avg.toFixed(1) : ''}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+
+            {/* Mon équipe — notes reçues */}
+            <div style={{ background: '#0d1117', border: `1px solid ${myColor}33`, borderRadius: 10 }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1a2332', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, flexShrink: 0 }} />
+                <span style={{ fontWeight: 700, fontSize: 14 }}>Mon équipe</span>
+                <span style={{ marginLeft: 'auto', fontSize: 11, color: '#4a5568' }}>Notes reçues</span>
+              </div>
+              {myTeam.map(pick => {
+                const allPickRatings = ratings.filter(r => r.pick_id === pick.id)
+                const avg = allPickRatings.length > 0
+                  ? allPickRatings.reduce((s, r) => s + r.rating, 0) / allPickRatings.length
+                  : null
+                return (
+                  <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #0f1923' }}>
+                    <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
+                      {pick.position}
+                    </span>
+                    <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {pick.player_name}
+                    </span>
+                    <Stars value={avg !== null ? Math.round(avg) : 0} disabled size={17} />
+                    <span style={{ fontSize: 10, color: avg !== null ? '#9ca3af' : '#2d3748', minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
+                      {avg !== null ? avg.toFixed(1) : '—'}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Terrain + liste */}
-      <div style={{ padding: '0 16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
+      {viewTab !== 'results' && <div style={{ padding: '0 16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
         {/* Terrain de foot */}
         <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #1a2332' }}>
           <FootballPitch
@@ -447,25 +600,21 @@ export default function Draft({ session, picks, onPick, onEnd }) {
           {(teamsByPlayer[players[viewTab]] || []).length === 0 && (
             <p style={{ fontSize: 13, color: '#2d3748', fontStyle: 'italic' }}>Aucun joueur encore</p>
           )}
-          {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => {
-            const natCount = {}
-            ;(teamsByPlayer[players[viewTab]] || []).forEach(e => { natCount[e.nationality] = (natCount[e.nationality] || 0) + 1 })
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
-                <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600 }}>
-                  {entry.position}
-                </span>
-                <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.player_name}
-                </span>
-                <span style={{ fontSize: 10, color: natCount[entry.nationality] >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
-                  {entry.nationality}
-                </span>
-              </div>
-            )
-          })}
+          {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
+              <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600 }}>
+                {entry.position}
+              </span>
+              <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {entry.player_name}
+              </span>
+              <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
+                {entry.nationality}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }

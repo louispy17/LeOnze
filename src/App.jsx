@@ -10,6 +10,7 @@ function generateId() {
 export default function App() {
   const [session, setSession] = useState(null)
   const [picks, setPicks] = useState([])
+  const [ratings, setRatings] = useState([])
   const [loading, setLoading] = useState(true)
   const sessionIdRef = useRef(null)
 
@@ -25,9 +26,13 @@ export default function App() {
   async function loadSession(id) {
     const { data: sess } = await supabase.from('draft_sessions').select('*').eq('id', id).single()
     if (!sess) { setLoading(false); return }
-    const { data: p } = await supabase.from('draft_picks').select('*').eq('session_id', id).order('turn_index')
+    const [{ data: p }, { data: r }] = await Promise.all([
+      supabase.from('draft_picks').select('*').eq('session_id', id).order('turn_index'),
+      supabase.from('draft_ratings').select('*').eq('session_id', id)
+    ])
     setSession(sess)
     setPicks(p || [])
+    setRatings(r || [])
     sessionIdRef.current = id
     setLoading(false)
     subscribeRealtime(id)
@@ -43,6 +48,12 @@ export default function App() {
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'draft_sessions', filter: `id=eq.${id}` }, payload => {
         setSession(payload.new)
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'draft_ratings', filter: `session_id=eq.${id}` }, payload => {
+        setRatings(prev => [...prev.filter(r => !(r.pick_id === payload.new.pick_id && r.rated_by === payload.new.rated_by)), payload.new])
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'draft_ratings', filter: `session_id=eq.${id}` }, payload => {
+        setRatings(prev => prev.map(r => r.id === payload.new.id ? payload.new : r))
       })
       .subscribe()
   }
@@ -69,6 +80,17 @@ export default function App() {
     setSession(prev => ({ ...prev, status: 'done' }))
   }
 
+  async function addRating(pickId, ratedBy, rating) {
+    setRatings(prev => [
+      ...prev.filter(r => !(r.pick_id === pickId && r.rated_by === ratedBy)),
+      { pick_id: pickId, rated_by: ratedBy, rating, session_id: sessionIdRef.current }
+    ])
+    await supabase.from('draft_ratings').upsert(
+      { session_id: sessionIdRef.current, pick_id: pickId, rated_by: ratedBy, rating },
+      { onConflict: 'pick_id,rated_by' }
+    )
+  }
+
   if (loading) return (
     <div style={{ textAlign: 'center', paddingTop: '4rem', color: '#666' }}>Chargement...</div>
   )
@@ -81,6 +103,8 @@ export default function App() {
       picks={picks}
       onPick={addPick}
       onEnd={endSession}
+      ratings={ratings}
+      onRate={addRating}
     />
   )
 }
