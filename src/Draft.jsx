@@ -142,6 +142,19 @@ export default function Draft({ session, picks, onPick, onEnd }) {
   const isMyTurn = nameSet && currentPlayer === myName
   const usedPlayers = picks.map(p => p.player_name.toLowerCase())
 
+  // Joueurs disponibles
+  const allNats = useMemo(() => [...new Set(PLAYERS.map(p => p.nationality))].sort(), [])
+  const allPos = ['GB','DC','DD','DG','MDC','MC','MO','AD','AG','ATT']
+  const availablePlayers = useMemo(() => {
+    return PLAYERS.filter(p => {
+      const taken = usedPlayers.includes(p.name.toLowerCase())
+      const matchSearch = !filterSearch || p.name.toLowerCase().includes(filterSearch.toLowerCase())
+      const matchNat = !filterNat || p.nationality === filterNat
+      const matchPos = !filterPos || p.position === filterPos
+      return !taken && matchSearch && matchNat && matchPos
+    })
+  }, [usedPlayers, filterSearch, filterNat, filterPos])
+
   async function handleSubmit() {
     if (!input.trim() || !isMyTurn || loading) return
     setLoading(true)
@@ -177,6 +190,10 @@ export default function Draft({ session, picks, onPick, onEnd }) {
     }
     setLoading(false)
   }
+
+  const myIndex = players.indexOf(myName)
+  const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
+  const myTeam = teamsByPlayer[myName] || []
 
   function copyLink() {
     navigator.clipboard.writeText(window.location.href)
@@ -219,25 +236,6 @@ export default function Draft({ session, picks, onPick, onEnd }) {
       </div>
     )
   }
-
-
-  // Modale joueurs disponibles
-  const availablePlayers = useMemo(() => {
-    return PLAYERS.filter(p => {
-      const taken = usedPlayers.includes(p.name.toLowerCase())
-      const matchSearch = !filterSearch || p.name.toLowerCase().includes(filterSearch.toLowerCase())
-      const matchNat = !filterNat || p.nationality === filterNat
-      const matchPos = !filterPos || p.position === filterPos
-      return !taken && matchSearch && matchNat && matchPos
-    })
-  }, [usedPlayers, filterSearch, filterNat, filterPos])
-
-  const allNats = useMemo(() => [...new Set(PLAYERS.map(p => p.nationality))].sort(), [])
-  const allPos = ['GB','DC','DD','DG','MDC','MC','MO','AD','AG','ATT']
-
-  const myIndex = players.indexOf(myName)
-  const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
-  const myTeam = teamsByPlayer[myName] || []
 
   return (
     <div style={{ minHeight: '100vh', background: '#080c10', color: '#fff', fontFamily: 'system-ui, sans-serif' }}>
