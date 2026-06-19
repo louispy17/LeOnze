@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { validatePlayer, PLAYERS } from './players.js'
 
 const MAX_PER_TEAM = 11
@@ -31,14 +31,32 @@ function getPosCoords(pos, idx, total) {
   return { x: Math.max(6, Math.min(94, base.x + offset)), y: base.y }
 }
 
-function FootballPitch({ team, color, isActive }) {
+function FootballPitch({ team, color, isActive, myName }) {
+  const svgRef = useRef(null)
+  const drag = useRef(null)
+  const [overrides, setOverrides] = useState({})
+
+  function toPct(e) {
+    const pt = svgRef.current.createSVGPoint()
+    const src = e.touches?.[0] ?? e
+    pt.x = src.clientX; pt.y = src.clientY
+    const p = pt.matrixTransform(svgRef.current.getScreenCTM().inverse())
+    return { x: Math.max(5, Math.min(95, p.x / 3)), y: Math.max(5, Math.min(95, p.y / 4.2)) }
+  }
+
   // Pré-calcul des totaux par poste pour centrer les groupes
   const posTotals = {}
   team.forEach(entry => { posTotals[entry.position] = (posTotals[entry.position] || 0) + 1 })
   const posIdx = {}
 
   return (
-    <svg viewBox="0 0 300 420" style={{ width: '100%', borderRadius: 8, display: 'block' }}>
+    <svg ref={svgRef} viewBox="0 0 300 420"
+      style={{ width: '100%', borderRadius: 8, display: 'block', touchAction: 'none' }}
+      onMouseMove={e => drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) }))}
+      onMouseUp={() => { drag.current = null }}
+      onMouseLeave={() => { drag.current = null }}
+      onTouchMove={e => { e.preventDefault(); drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) })) }}
+      onTouchEnd={() => { drag.current = null }}>
       {/* Fond pelouse */}
       <defs>
         <linearGradient id={`grass-${color}`} x1="0" y1="0" x2="0" y2="1">
@@ -73,12 +91,17 @@ function FootballPitch({ team, color, isActive }) {
         const pos = entry.position
         const idx = posIdx[pos] || 0
         posIdx[pos] = idx + 1
-        const coords = getPosCoords(pos, idx, posTotals[pos])
-        const cx = (coords.x / 100) * 300
-        const cy = (coords.y / 100) * 420
+        const base = getPosCoords(pos, idx, posTotals[pos])
+        const o = overrides[entry.id]
+        const cx = ((o?.x ?? base.x) / 100) * 300
+        const cy = ((o?.y ?? base.y) / 100) * 420
         const name = entry.player_name.split(' ').pop()
+        const isMe = entry.picked_by === myName
         return (
-          <g key={i}>
+          <g key={i}
+            style={{ cursor: isMe ? 'grab' : 'default' }}
+            onMouseDown={isMe ? e => { e.stopPropagation(); drag.current = entry.id } : undefined}
+            onTouchStart={isMe ? e => { e.stopPropagation(); drag.current = entry.id } : undefined}>
             <circle cx={cx} cy={cy} r="16" fill={color} opacity="0.9" />
             <circle cx={cx} cy={cy} r="16" fill="none" stroke="white" strokeWidth="1.5" opacity="0.6"/>
             <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
@@ -600,6 +623,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             team={teamsByPlayer[players[viewTab]] || []}
             color={PLAYER_COLORS[viewTab]}
             isActive={players[viewTab] === myName}
+            myName={myName}
           />
         </div>
 
