@@ -6254,9 +6254,9 @@ export function validatePlayer({ playerName, team, usedPlayers }) {
   const input = normalize(playerName)
   const match = PLAYERS.find(p => {
     const n = normalize(p.name)
-    const parts = p.name.split(' ')
-    const lastName = normalize(parts[parts.length - 1])
-    return n === input || n.includes(input) || (input.length > 3 && lastName === input)
+    const parts = n.split(' ')
+    // Match si : nom complet, inclus dans le nom, ou n'importe quel mot du nom
+    return n === input || n.includes(input) || parts.some(part => part === input && input.length > 2)
   })
   if (!match) return { valid: false, reason: `"${playerName}" n'a pas participé à la CDM 2026 ou est inconnu.` }
   if (usedPlayers.some(u => normalize(u) === normalize(match.name))) return { valid: false, reason: `${match.name} est déjà pris.` }
