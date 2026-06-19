@@ -127,15 +127,11 @@ export default function Draft({ session, picks, onPick, onEnd }) {
   const totalPicks = picks.length
 
   function currentTurnPlayer() {
-    let idx = 0
-    let pickCount = 0
-    while (pickCount < totalPicks) {
-      const p = players[idx % players.length]
-      if ((teamsByPlayer[p] || []).length < MAX_PER_TEAM) pickCount++
-      if (pickCount < totalPicks) idx++
-    }
-    while ((teamsByPlayer[players[idx % players.length]] || []).length >= MAX_PER_TEAM) idx++
-    return players[idx % players.length]
+    const n = players.length
+    const round = Math.floor(totalPicks / n)
+    const pos = totalPicks % n
+    const idx = round % 2 === 0 ? pos : n - 1 - pos
+    return players[idx]
   }
 
   const currentPlayer = allDone ? null : currentTurnPlayer()
