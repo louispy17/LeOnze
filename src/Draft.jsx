@@ -22,14 +22,21 @@ const POS_COORDS = {
 // Couleurs par joueur
 const PLAYER_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
 
-function getPosCoords(pos, existingInPos) {
+function getPosCoords(pos, idx, total) {
   const base = POS_COORDS[pos] || { x: 50, y: 50 }
-  const offset = existingInPos * 12
-  return { x: base.x + (existingInPos % 2 === 0 ? 0 : offset - 6), y: base.y }
+  if (total === 1) return base
+  // Espacement entre joueurs adjacents : 24% pour 2, 16% pour 3+
+  const step = total === 2 ? 24 : 16
+  const offset = (idx - (total - 1) / 2) * step
+  return { x: Math.max(6, Math.min(94, base.x + offset)), y: base.y }
 }
 
 function FootballPitch({ team, color, isActive }) {
-  const posCounts = {}
+  // Pré-calcul des totaux par poste pour centrer les groupes
+  const posTotals = {}
+  team.forEach(entry => { posTotals[entry.position] = (posTotals[entry.position] || 0) + 1 })
+  const posIdx = {}
+
   return (
     <svg viewBox="0 0 300 420" style={{ width: '100%', borderRadius: 8, display: 'block' }}>
       {/* Fond pelouse */}
@@ -38,10 +45,6 @@ function FootballPitch({ team, color, isActive }) {
           <stop offset="0%" stopColor="#1a472a" />
           <stop offset="100%" stopColor="#153d24" />
         </linearGradient>
-        {/* Bandes de gazon */}
-        {[0,1,2,3,4,5,6].map(i => (
-          <rect key={i} x="0" y={i*60} width="300" height="30" fill={i%2===0 ? '#1a472a' : '#173d22'} />
-        ))}
       </defs>
       <rect width="300" height="420" fill={`url(#grass-${color})`} rx="8" />
       {/* Bandes */}
@@ -68,9 +71,9 @@ function FootballPitch({ team, color, isActive }) {
       {/* Joueurs */}
       {team.map((entry, i) => {
         const pos = entry.position
-        const count = posCounts[pos] || 0
-        posCounts[pos] = count + 1
-        const coords = getPosCoords(pos, count)
+        const idx = posIdx[pos] || 0
+        posIdx[pos] = idx + 1
+        const coords = getPosCoords(pos, idx, posTotals[pos])
         const cx = (coords.x / 100) * 300
         const cy = (coords.y / 100) * 420
         const name = entry.player_name.split(' ').pop()
@@ -121,7 +124,7 @@ function Stars({ value, onChange, disabled, size = 18 }) {
   )
 }
 
-export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate }) {
+export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos }) {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -134,6 +137,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const [filterPos, setFilterPos] = useState('')
   const [filterSearch, setFilterSearch] = useState('')
   const [confettis, setConfettis] = useState([])
+  const [editingPosId, setEditingPosId] = useState(null)
 
   const players = session.players
 
@@ -152,6 +156,13 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   useEffect(() => {
     if (allDone) setViewTab('results')
   }, [allDone])
+
+  useEffect(() => {
+    if (!editingPosId) return
+    const close = () => setEditingPosId(null)
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [editingPosId])
 
   const globalNatCount = useMemo(() => {
     const count = {}
@@ -600,19 +611,45 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           {(teamsByPlayer[players[viewTab]] || []).length === 0 && (
             <p style={{ fontSize: 13, color: '#2d3748', fontStyle: 'italic' }}>Aucun joueur encore</p>
           )}
-          {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
-              <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600 }}>
-                {entry.position}
-              </span>
-              <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {entry.player_name}
-              </span>
-              <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
-                {entry.nationality}
-              </span>
-            </div>
-          ))}
+          {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => {
+            const isMyPick = entry.picked_by === myName
+            const isEditing = editingPosId === entry.id
+            return (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
+                {isMyPick ? (
+                  <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                    <span
+                      onClick={() => setEditingPosId(isEditing ? null : entry.id)}
+                      title="Changer le poste"
+                      style={{ fontSize: 10, background: isEditing ? '#1e3a5f' : '#1a2332', border: `1px solid ${isEditing ? myColor + '88' : '#3d5a80'}`, borderRadius: 4, padding: '2px 5px', color: isEditing ? myColor : '#93c5fd', minWidth: 30, textAlign: 'center', fontWeight: 600, cursor: 'pointer', display: 'block', userSelect: 'none' }}>
+                      {entry.position}
+                    </span>
+                    {isEditing && (
+                      <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: '#0d1117', border: '1px solid #2d3748', borderRadius: 8, padding: '4px 0', minWidth: 76, boxShadow: '0 8px 24px rgba(0,0,0,0.7)' }}>
+                        {allPos.map(pos => (
+                          <div key={pos}
+                            onClick={() => { onUpdatePos(entry.id, pos); setEditingPosId(null) }}
+                            style={{ padding: '5px 12px', fontSize: 12, color: pos === entry.position ? myColor : '#9ca3af', cursor: 'pointer', fontWeight: pos === entry.position ? 700 : 400, background: pos === entry.position ? myColor + '18' : 'transparent' }}>
+                            {pos}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
+                    {entry.position}
+                  </span>
+                )}
+                <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {entry.player_name}
+                </span>
+                <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
+                  {entry.nationality}
+                </span>
+              </div>
+            )
+          })}
         </div>
       </div>}
     </div>

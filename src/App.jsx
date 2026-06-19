@@ -46,6 +46,9 @@ export default function App() {
           return [...prev, payload.new].sort((a, b) => a.turn_index - b.turn_index)
         })
       })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'draft_picks', filter: `session_id=eq.${id}` }, payload => {
+        setPicks(prev => prev.map(p => p.id === payload.new.id ? payload.new : p))
+      })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'draft_sessions', filter: `id=eq.${id}` }, payload => {
         setSession(payload.new)
       })
@@ -72,7 +75,13 @@ export default function App() {
 
   async function addPick(pick) {
     const { data } = await supabase.from('draft_picks').insert({ ...pick, session_id: sessionIdRef.current }).select().single()
+    if (data) setPicks(prev => prev.find(p => p.id === data.id) ? prev : [...prev, data].sort((a, b) => a.turn_index - b.turn_index))
     return data
+  }
+
+  async function updatePickPosition(pickId, position) {
+    setPicks(prev => prev.map(p => p.id === pickId ? { ...p, position } : p))
+    await supabase.from('draft_picks').update({ position }).eq('id', pickId)
   }
 
   async function endSession() {
@@ -105,6 +114,7 @@ export default function App() {
       onEnd={endSession}
       ratings={ratings}
       onRate={addRating}
+      onUpdatePos={updatePickPosition}
     />
   )
 }
