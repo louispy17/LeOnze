@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { validatePlayer } from './players.js'
 
 const MAX_PER_TEAM = 11
 const MAX_NAT = 2
@@ -49,17 +50,11 @@ export default function Draft({ session, picks, onPick, onEnd }) {
 
     const myTeam = teamsByPlayer[myName] || []
     try {
-      const resp = await fetch('/api/validate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playerName: input.trim(),
-          team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
-          usedPlayers,
-          pickedBy: myName
-        })
+      const result = validatePlayer({
+        playerName: input.trim(),
+        team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
+        usedPlayers
       })
-      const result = await resp.json()
 
       if (!result.valid) {
         setStatus({ type: 'err', msg: '❌ ' + (result.reason || 'Joueur invalide') })
@@ -79,7 +74,7 @@ export default function Draft({ session, picks, onPick, onEnd }) {
         }
       }
     } catch {
-      setStatus({ type: 'err', msg: 'Erreur réseau, réessaie.' })
+      setStatus({ type: 'err', msg: 'Erreur inattendue, réessaie.' })
     }
     setLoading(false)
   }
