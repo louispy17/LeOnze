@@ -83,6 +83,17 @@ export default function Setup({ onCreate }) {
           </div>
         </div>
       )}
+
+      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+        <a
+          href="https://buymeacoffee.com/louispy"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}
+        >
+          ☕ Buy me a coffee
+        </a>
+      </div>
     </div>
   )
 }
