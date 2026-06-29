@@ -135,14 +135,36 @@ export default function Setup({ onCreate }) {
         </div>
       )}
 
-      <div style={{ textAlign: 'center', marginTop: '2rem' }}>
+      <div style={{
+        marginTop: '2rem',
+        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+        borderRadius: 16,
+        padding: '24px 20px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 12 }}>☕</div>
+        <p style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>
+          Tu kiffes LeOnze ?
+        </p>
+        <p style={{ fontSize: 14, color: '#44403c', marginBottom: 16, lineHeight: 1.4 }}>
+          Soutiens le dév fan de foot qui t'a fait kiffer ce jeu de draft 🤪
+        </p>
         <a
           href="https://buymeacoffee.com/louispy"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: '#555', fontSize: 12, textDecoration: 'none' }}
+          style={{
+            display: 'inline-block',
+            background: '#1a1a1a',
+            color: '#fff',
+            padding: '12px 24px',
+            borderRadius: 10,
+            fontSize: 16,
+            fontWeight: 600,
+            textDecoration: 'none',
+          }}
         >
-          ☕ Buy me a coffee
+          ☕ Offrir un café
         </a>
       </div>
     </div>
