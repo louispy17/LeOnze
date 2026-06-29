@@ -39,7 +39,45 @@ export default function Setup({ onCreate }) {
     <div>
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>Draft CDM 2026 ⚽</h1>
-        <p style={{ color: '#888', fontSize: 14 }}>Construisez votre XI — max 2 joueurs par nationalité</p>
+      </div>
+
+      <div style={{
+        background: '#111',
+        border: '1px solid #222',
+        borderRadius: 12,
+        padding: '20px',
+        marginBottom: '1.5rem',
+      }}>
+        <div style={{ marginBottom: 20 }}>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 6 }}>🎯 Le but du jeu</p>
+          <p style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>
+            Construis le meilleur XI de la Coupe du Monde 2026 et compare-le avec tes potes !
+          </p>
+        </div>
+
+        <div>
+          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 12 }}>📋 Les règles</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>🔄 Draft en serpentin</span> — L'ordre de sélection s'inverse à chaque round : J1→J2→J3→J4→J4→J3→J2→J1...
+            </div>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>👤 1 pick par tour</span> — Chacun choisit un joueur à la fois, à son tour
+            </div>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>🌍 Max 2 par nationalité</span> — Pas plus de 2 joueurs de la même nationalité sur l'ensemble du draft (tous participants confondus)
+            </div>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>🚫 Joueur bloqué</span> — Un joueur sélectionné est retiré du pool pour tout le monde
+            </div>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>⚽ Joueurs CDM 2026 uniquement</span> — Seuls les joueurs qualifiés pour la CDM 2026 sont acceptés
+            </div>
+            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
+              <span style={{ color: '#fff' }}>🏆 11 joueurs</span> — Complète ton XI pour terminer la partie et comparer les équipes
+            </div>
+          </div>
+        </div>
       </div>
 
       <div style={{ marginBottom: '1.5rem' }}>
