@@ -7,32 +7,32 @@ export const COACHES = [
   {
     id: 'zidane',
     name: 'Zidane',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f3/Zinedine_Zidane_by_Tasnim_03.jpg/220px-Zinedine_Zidane_by_Tasnim_03.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Zinedine_Zidane_by_Tasnim_03.jpg?width=200',
   },
   {
     id: 'jacquet',
     name: 'Aimé Jacquet',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8e/Aim%C3%A9_Jacquet_2008.jpg/220px-Aim%C3%A9_Jacquet_2008.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Aimé_Jacquet_2008.jpg?width=200',
   },
   {
     id: 'deschamps',
     name: 'Deschamps',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/88/Didier_Deschamps_2018.jpg/220px-Didier_Deschamps_2018.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Didier_Deschamps_2018.jpg?width=200',
   },
   {
     id: 'luis-enrique',
     name: 'Luis Enrique',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/Luis_Enrique_2018_%28cropped%29.jpg/220px-Luis_Enrique_2018_%28cropped%29.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Luis_Enrique_-_01.jpg?width=200',
   },
   {
     id: 'bielsa',
     name: 'Bielsa',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/10/Marcelo_Bielsa_2019.jpg/220px-Marcelo_Bielsa_2019.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Marcelo_Bielsa_2012.jpg?width=200',
   },
   {
     id: 'ancelotti',
     name: 'Ancelotti',
-    image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Carlo_Ancelotti_2024.jpg/220px-Carlo_Ancelotti_2024.jpg',
+    image: 'https://en.wikipedia.org/wiki/Special:FilePath/Carlo_Ancelotti_2017.jpg?width=200',
   },
   {
     id: 'jordan-93',

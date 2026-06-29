@@ -61,34 +61,83 @@ export default function Setup({ onCreate }) {
       {filledNames.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
           <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Choix du coach (optionnel)</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {filledNames.map(name => {
               const trimmed = name.trim()
               const selectedCoach = coaches[trimmed]
               return (
-                <div key={trimmed} style={{ background: '#111', border: '1px solid #222', borderRadius: 8, padding: '10px 12px' }}>
-                  <p style={{ fontSize: 12, color: '#888', marginBottom: 8 }}>{trimmed}</p>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <div key={trimmed} style={{ background: '#111', border: '1px solid #222', borderRadius: 10, padding: '14px' }}>
+                  <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12, fontWeight: 500 }}>{trimmed}</p>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
+                    gap: 10,
+                  }}>
                     {COACHES.map(coach => {
                       const isSelected = selectedCoach === coach.id
+                      const isEmoji = !!coach.emoji
                       return (
                         <button
                           key={coach.id}
                           onClick={() => updateCoach(trimmed, isSelected ? null : coach.id)}
                           style={{
-                            display: 'flex', alignItems: 'center', gap: 6,
-                            padding: '6px 10px', borderRadius: 6,
-                            background: isSelected ? '#1a3a2a' : '#0a0a0a',
-                            border: `1px solid ${isSelected ? '#2a5a4a' : '#333'}`,
-                            cursor: 'pointer', transition: 'all 0.15s'
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            padding: '12px 8px 10px',
+                            borderRadius: 10,
+                            background: isEmoji
+                              ? 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)'
+                              : isSelected ? '#1a3a2a' : '#0a0a0a',
+                            border: `2px solid ${isSelected ? '#4ade80' : '#333'}`,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            position: 'relative',
+                            minWidth: 0,
                           }}
                         >
+                          {isSelected && (
+                            <div style={{
+                              position: 'absolute',
+                              top: 6,
+                              right: 6,
+                              width: 18,
+                              height: 18,
+                              borderRadius: '50%',
+                              background: '#4ade80',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}>
+                              <span style={{ fontSize: 11, color: '#000' }}>✓</span>
+                            </div>
+                          )}
                           {coach.emoji ? (
-                            <span style={{ fontSize: 16 }}>{coach.emoji}</span>
+                            <div style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: '50%',
+                              background: 'linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: 8,
+                              border: '1px solid #3d3d5c',
+                            }}>
+                              <span style={{ fontSize: 28 }}>{coach.emoji}</span>
+                            </div>
                           ) : (
                             <div style={{
-                              width: 20, height: 20, borderRadius: '50%', overflow: 'hidden',
-                              background: '#1a2332', display: 'flex', alignItems: 'center', justifyContent: 'center'
+                              width: 56,
+                              height: 56,
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              background: '#1a2332',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              marginBottom: 8,
+                              border: '1px solid #2d3748',
                             }}>
                               {coach.image && !imgErrors[coach.id] ? (
                                 <img
@@ -98,13 +147,23 @@ export default function Setup({ onCreate }) {
                                   onError={() => setImgErrors(p => ({ ...p, [coach.id]: true }))}
                                 />
                               ) : (
-                                <span style={{ fontSize: 8, fontWeight: 700, color: '#666' }}>
+                                <span style={{ fontSize: 18, fontWeight: 700, color: '#666' }}>
                                   {getCoachInitials(coach.name)}
                                 </span>
                               )}
                             </div>
                           )}
-                          <span style={{ fontSize: 11, color: isSelected ? '#6b9b6b' : '#888' }}>
+                          <span style={{
+                            fontSize: 11,
+                            color: isSelected ? '#6ee7b7' : '#999',
+                            fontWeight: isSelected ? 600 : 400,
+                            textAlign: 'center',
+                            lineHeight: 1.2,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                          }}>
                             {coach.name}
                           </span>
                         </button>
