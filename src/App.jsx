@@ -12,6 +12,7 @@ export default function App() {
   const [picks, setPicks] = useState([])
   const [ratings, setRatings] = useState([])
   const [loading, setLoading] = useState(true)
+  const [realtimeStatus, setRealtimeStatus] = useState('disconnected')
   const sessionIdRef = useRef(null)
 
   useEffect(() => {
@@ -58,12 +59,16 @@ export default function App() {
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'draft_ratings', filter: `session_id=eq.${id}` }, payload => {
         setRatings(prev => prev.map(r => r.id === payload.new.id ? payload.new : r))
       })
-      .subscribe()
+      .subscribe((status) => {
+        setRealtimeStatus(status === 'SUBSCRIBED' ? 'connected' : 'disconnected')
+      })
   }
 
-  async function createSession(playerNames) {
+  async function createSession(playerNames, bannedNationality = null) {
     const id = generateId()
-    const { data } = await supabase.from('draft_sessions').insert({ id, players: playerNames, status: 'active' }).select().single()
+    const insertData = { id, players: playerNames, status: 'active' }
+    if (bannedNationality) insertData.banned_nationality = bannedNationality
+    const { data } = await supabase.from('draft_sessions').insert(insertData).select().single()
     setSession(data)
     setPicks([])
     sessionIdRef.current = id
@@ -82,6 +87,11 @@ export default function App() {
   async function updatePickPosition(pickId, position) {
     setPicks(prev => prev.map(p => p.id === pickId ? { ...p, position } : p))
     await supabase.from('draft_picks').update({ position }).eq('id', pickId)
+  }
+
+  async function updatePickCoords(pickId, pos_x, pos_y) {
+    setPicks(prev => prev.map(p => p.id === pickId ? { ...p, pos_x, pos_y } : p))
+    await supabase.from('draft_picks').update({ pos_x, pos_y }).eq('id', pickId)
   }
 
   async function endSession() {
@@ -115,6 +125,8 @@ export default function App() {
       ratings={ratings}
       onRate={addRating}
       onUpdatePos={updatePickPosition}
+      onUpdateCoords={updatePickCoords}
+      realtimeStatus={realtimeStatus}
     />
   )
 }

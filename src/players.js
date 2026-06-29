@@ -6250,18 +6250,26 @@ function normalize(str) {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim()
 }
 
-export function validatePlayer({ playerName, team, usedPlayers, allPicks = [] }) {
+export function validatePlayer({ playerName, team, usedPlayers, allPicks = [], bannedNationality = null }) {
   const input = normalize(playerName)
-  const match = PLAYERS.find(p => {
+  const allMatches = PLAYERS.filter(p => {
     const n = normalize(p.name)
     const parts = n.split(' ')
-    // Match si : nom complet, inclus dans le nom, ou n'importe quel mot du nom
     return n === input || n.includes(input) || parts.some(part => part === input && input.length > 2)
   })
-  if (!match) return { valid: false, reason: `"${playerName}" n'a pas participé à la CDM 2026 ou est inconnu.` }
+  if (allMatches.length === 0) return { valid: false, reason: `"${playerName}" n'a pas participé à la CDM 2026 ou est inconnu.` }
+  if (allMatches.length > 1) return { ambiguous: true, matches: allMatches.map(p => ({ name: p.name, nationality: p.nationality, position: p.position })) }
+  const match = allMatches[0]
+  if (bannedNationality && match.nationality === bannedNationality) {
+    return { valid: false, reason: `🚫 Les joueurs de ${bannedNationality} sont bannis de cette session.` }
+  }
   if (usedPlayers.some(u => normalize(u) === normalize(match.name))) return { valid: false, reason: `${match.name} est déjà pris.` }
   const natCount = {}
   allPicks.forEach(e => { natCount[e.nationality] = (natCount[e.nationality] || 0) + 1 })
   if ((natCount[match.nationality] || 0) >= 2) return { valid: false, reason: `Il y a déjà 2 joueurs de ${match.nationality} dans le draft.` }
   return { valid: true, name: match.name, nationality: match.nationality, position: match.position }
+}
+
+export function getAllNationalities() {
+  return [...new Set(PLAYERS.map(p => p.nationality))].sort()
 }

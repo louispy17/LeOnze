@@ -1,7 +1,11 @@
 import { useState } from 'react'
+import { getAllNationalities } from './players.js'
+
+const allNats = getAllNationalities()
 
 export default function Setup({ onCreate }) {
   const [names, setNames] = useState(['', '', '', ''])
+  const [bannedNationality, setBannedNationality] = useState('')
   const [shareUrl, setShareUrl] = useState('')
   const [creating, setCreating] = useState(false)
 
@@ -13,7 +17,7 @@ export default function Setup({ onCreate }) {
     const filled = names.filter(n => n.trim())
     if (filled.length < 2) { alert('Entrez au moins 2 noms.'); return }
     setCreating(true)
-    const url = await onCreate(filled.map(n => n.trim()).filter(Boolean))
+    const url = await onCreate(filled.map(n => n.trim()).filter(Boolean), bannedNationality || null)
     setShareUrl(url)
     setCreating(false)
   }
@@ -38,6 +42,30 @@ export default function Setup({ onCreate }) {
             />
           ))}
         </div>
+      </div>
+
+      <div style={{ marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>Nationalité bannie (optionnel)</p>
+        <select
+          value={bannedNationality}
+          onChange={e => setBannedNationality(e.target.value)}
+          style={{
+            width: '100%',
+            background: '#111',
+            border: '1px solid #333',
+            borderRadius: 8,
+            padding: '10px 12px',
+            color: bannedNationality ? '#fff' : '#666',
+            fontSize: 14,
+            outline: 'none'
+          }}
+        >
+          <option value="">Aucune</option>
+          {allNats.map(n => <option key={n} value={n}>{n}</option>)}
+        </select>
+        <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
+          Les joueurs de cette nationalité ne pourront pas être sélectionnés.
+        </p>
       </div>
 
       <button className="primary" onClick={handleCreate} disabled={creating} style={{ width: '100%', marginBottom: '1rem' }}>

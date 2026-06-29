@@ -1,153 +1,13 @@
-import { useState, useMemo, useEffect, useRef } from 'react'
-import { validatePlayer, PLAYERS } from './players.js'
+import { useState, useMemo, useEffect } from 'react'
+import { validatePlayer, getAllNationalities } from './players.js'
+import { MAX_PER_TEAM, MAX_NAT, PLAYER_COLORS, ALL_POSITIONS } from './constants.js'
+import FootballPitch from './components/FootballPitch.jsx'
+import PlayerList from './components/PlayerList.jsx'
+import ResultsView from './components/ResultsView.jsx'
 
-const MAX_PER_TEAM = 11
-const MAX_NAT = 2
+const allNats = getAllNationalities()
 
-// Positions sur le terrain (% x, % y) pour une formation 4-3-3 par défaut
-// On place les joueurs selon leur poste
-const POS_COORDS = {
-  GB:  { x: 50, y: 88 },
-  DC:  { x: 50, y: 72 },
-  DD:  { x: 78, y: 72 },
-  DG:  { x: 22, y: 72 },
-  MDC: { x: 50, y: 55 },
-  MC:  { x: 35, y: 48 },
-  MO:  { x: 65, y: 42 },
-  AD:  { x: 78, y: 28 },
-  AG:  { x: 22, y: 28 },
-  ATT: { x: 50, y: 18 },
-}
-
-// Couleurs par joueur
-const PLAYER_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
-
-function getPosCoords(pos, idx, total) {
-  const base = POS_COORDS[pos] || { x: 50, y: 50 }
-  if (total === 1) return base
-  // Espacement entre joueurs adjacents : 24% pour 2, 16% pour 3+
-  const step = total === 2 ? 24 : 16
-  const offset = (idx - (total - 1) / 2) * step
-  return { x: Math.max(6, Math.min(94, base.x + offset)), y: base.y }
-}
-
-function FootballPitch({ team, color, isActive, myName }) {
-  const svgRef = useRef(null)
-  const drag = useRef(null)
-  const [overrides, setOverrides] = useState({})
-
-  function toPct(e) {
-    const pt = svgRef.current.createSVGPoint()
-    const src = e.touches?.[0] ?? e
-    pt.x = src.clientX; pt.y = src.clientY
-    const p = pt.matrixTransform(svgRef.current.getScreenCTM().inverse())
-    return { x: Math.max(5, Math.min(95, p.x / 3)), y: Math.max(5, Math.min(95, p.y / 4.2)) }
-  }
-
-  // Pré-calcul des totaux par poste pour centrer les groupes
-  const posTotals = {}
-  team.forEach(entry => { posTotals[entry.position] = (posTotals[entry.position] || 0) + 1 })
-  const posIdx = {}
-
-  return (
-    <svg ref={svgRef} viewBox="0 0 300 420"
-      style={{ width: '100%', borderRadius: 8, display: 'block', touchAction: 'none' }}
-      onMouseMove={e => drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) }))}
-      onMouseUp={() => { drag.current = null }}
-      onMouseLeave={() => { drag.current = null }}
-      onTouchMove={e => { e.preventDefault(); drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) })) }}
-      onTouchEnd={() => { drag.current = null }}>
-      {/* Fond pelouse */}
-      <defs>
-        <linearGradient id={`grass-${color}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#1a472a" />
-          <stop offset="100%" stopColor="#153d24" />
-        </linearGradient>
-      </defs>
-      <rect width="300" height="420" fill={`url(#grass-${color})`} rx="8" />
-      {/* Bandes */}
-      {[0,1,2,3,4,5,6].map(i => (
-        <rect key={i} x="0" y={i*60} width="300" height="30" fill={i%2===0 ? '#1a472a' : '#163820'} opacity="0.6" />
-      ))}
-      {/* Lignes terrain */}
-      <rect x="20" y="15" width="260" height="390" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5" rx="2"/>
-      {/* Ligne médiane */}
-      <line x1="20" y1="210" x2="280" y2="210" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      {/* Cercle central */}
-      <circle cx="150" cy="210" r="35" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      <circle cx="150" cy="210" r="2" fill="rgba(255,255,255,0.5)"/>
-      {/* Surface de réparation haute */}
-      <rect x="75" y="15" width="150" height="55" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      <rect x="110" y="15" width="80" height="25" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      {/* Surface de réparation basse */}
-      <rect x="75" y="350" width="150" height="55" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      <rect x="110" y="380" width="80" height="25" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="1.5"/>
-      {/* Points de penalty */}
-      <circle cx="150" cy="57" r="2" fill="rgba(255,255,255,0.5)"/>
-      <circle cx="150" cy="363" r="2" fill="rgba(255,255,255,0.5)"/>
-
-      {/* Joueurs */}
-      {team.map((entry, i) => {
-        const pos = entry.position
-        const idx = posIdx[pos] || 0
-        posIdx[pos] = idx + 1
-        const base = getPosCoords(pos, idx, posTotals[pos])
-        const o = overrides[entry.id]
-        const cx = ((o?.x ?? base.x) / 100) * 300
-        const cy = ((o?.y ?? base.y) / 100) * 420
-        const name = entry.player_name.split(' ').pop()
-        const isMe = entry.picked_by === myName
-        return (
-          <g key={i}
-            style={{ cursor: isMe ? 'grab' : 'default' }}
-            onMouseDown={isMe ? e => { e.stopPropagation(); drag.current = entry.id } : undefined}
-            onTouchStart={isMe ? e => { e.stopPropagation(); drag.current = entry.id } : undefined}>
-            <circle cx={cx} cy={cy} r="16" fill={color} opacity="0.9" />
-            <circle cx={cx} cy={cy} r="16" fill="none" stroke="white" strokeWidth="1.5" opacity="0.6"/>
-            <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle"
-              fontSize="7" fontWeight="700" fill="white" fontFamily="system-ui">
-              {entry.position}
-            </text>
-            {/* Nom sous le cercle */}
-            <rect x={cx - 22} y={cy + 18} width="44" height="12" rx="3" fill="rgba(0,0,0,0.7)"/>
-            <text x={cx} y={cy + 25} textAnchor="middle" dominantBaseline="middle"
-              fontSize="6.5" fill="white" fontFamily="system-ui" fontWeight="500">
-              {name.length > 9 ? name.slice(0, 9) + '.' : name}
-            </text>
-          </g>
-        )
-      })}
-
-      {/* Slots vides si moins de 11 */}
-      {isActive && team.length < 11 && (
-        <text x="150" y="210" textAnchor="middle" dominantBaseline="middle"
-          fontSize="11" fill="rgba(255,255,255,0.2)" fontFamily="system-ui">
-          {11 - team.length} joueur{11 - team.length > 1 ? 's' : ''} restant{11 - team.length > 1 ? 's' : ''}
-        </text>
-      )}
-    </svg>
-  )
-}
-
-function Stars({ value, onChange, disabled, size = 18 }) {
-  const [hovered, setHovered] = useState(null)
-  const display = hovered ?? value ?? 0
-  return (
-    <div style={{ display: 'flex', gap: 1 }}>
-      {[1,2,3,4,5].map(n => (
-        <span key={n}
-          onMouseEnter={() => !disabled && setHovered(n)}
-          onMouseLeave={() => !disabled && setHovered(null)}
-          onClick={() => !disabled && onChange?.(n)}
-          style={{ cursor: disabled ? 'default' : 'pointer', fontSize: size, lineHeight: 1, color: n <= display ? '#f59e0b' : '#374151', userSelect: 'none' }}>
-          ★
-        </span>
-      ))}
-    </div>
-  )
-}
-
-export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos }) {
+export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected' }) {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -161,8 +21,10 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const [filterSearch, setFilterSearch] = useState('')
   const [confettis, setConfettis] = useState([])
   const [editingPosId, setEditingPosId] = useState(null)
+  const [matches, setMatches] = useState([])
 
   const players = session.players
+  const bannedNationality = session.banned_nationality
 
   const teamsByPlayer = useMemo(() => {
     const map = {}
@@ -215,33 +77,26 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const currentPlayer = allDone ? null : currentTurnPlayer()
   const isMyTurn = nameSet && currentPlayer === myName
   const usedPlayers = picks.map(p => p.player_name.toLowerCase())
+  const myIndex = players.indexOf(myName)
+  const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
+  const myTeam = teamsByPlayer[myName] || []
 
-  // Joueurs disponibles
-  const allNats = useMemo(() => [...new Set(PLAYERS.map(p => p.nationality))].sort(), [])
-  const allPos = ['GB','DC','DD','DG','MDC','MC','MO','AD','AG','ATT']
-  const availablePlayers = useMemo(() => {
-    return PLAYERS.filter(p => {
-      const taken = usedPlayers.includes(p.name.toLowerCase())
-      const matchSearch = !filterSearch || p.name.toLowerCase().includes(filterSearch.toLowerCase())
-      const matchNat = !filterNat || p.nationality === filterNat
-      const matchPos = !filterPos || p.position === filterPos
-      return !taken && matchSearch && matchNat && matchPos
-    })
-  }, [usedPlayers, filterSearch, filterNat, filterPos])
-
-  async function handleSubmit() {
-    if (!input.trim() || !isMyTurn || loading) return
+  async function submitPick(playerName) {
+    setMatches([])
     setLoading(true)
     setStatus({ type: 'loading', msg: 'Validation...' })
-    const myTeam = teamsByPlayer[myName] || []
     try {
       const result = validatePlayer({
-        playerName: input.trim(),
+        playerName,
         team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
         usedPlayers,
-        allPicks: picks
+        allPicks: picks,
+        bannedNationality
       })
-      if (!result.valid) {
+      if (result.ambiguous) {
+        setMatches(result.matches)
+        setStatus(null)
+      } else if (!result.valid) {
         setStatus({ type: 'err', msg: '❌ ' + (result.reason || 'Joueur invalide') })
       } else {
         await onPick({
@@ -252,7 +107,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           turn_index: totalPicks
         })
         setStatus({ type: 'ok', msg: `✅ ${result.name} (${result.position}, ${result.nationality})` })
-        launchConfetti(myColor)
+        launchConfetti()
         setInput('')
         if (myTeam.length + 1 >= MAX_PER_TEAM) {
           const allNowDone = players.every(p => p === myName
@@ -267,15 +122,11 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
     setLoading(false)
   }
 
-  const myIndex = players.indexOf(myName)
-  const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
-  const myTeam = teamsByPlayer[myName] || []
-
-  function launchConfetti(color) {
+  function launchConfetti() {
     const items = Array.from({ length: 32 }, (_, i) => ({
       id: Date.now() + i,
       x: Math.random() * 100,
-      color: [color, '#fff', '#ffd700', '#ff6b6b', '#4ecdc4'][Math.floor(Math.random() * 5)],
+      color: [myColor, '#fff', '#ffd700', '#ff6b6b', '#4ecdc4'][Math.floor(Math.random() * 5)],
       size: 6 + Math.random() * 8,
       delay: Math.random() * 0.4,
       rotate: Math.random() * 360,
@@ -290,7 +141,6 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
     setTimeout(() => setCopied(false), 2000)
   }
 
-  // Écran de sélection du joueur
   if (!nameSet) {
     return (
       <div style={{ minHeight: '100vh', background: '#080c10', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
@@ -349,7 +199,6 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
 
   return (
     <div style={{ minHeight: '100vh', background: '#080c10', color: '#fff', fontFamily: 'system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
-      {/* Confettis */}
       {confettis.map(c => (
         <div key={c.id} style={{
           position: 'fixed', top: '-10px', left: `${c.x}%`,
@@ -367,6 +216,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
       `}</style>
+
       {/* Header */}
       <div style={{ background: '#0d1117', borderBottom: '1px solid #1a2332', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -375,8 +225,16 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>LeOnze</span>
             <span style={{ color: '#4a5568', fontSize: 12, marginLeft: 8 }}>CDM 2026</span>
           </div>
+          {bannedNationality && (
+            <span style={{ background: '#4a1a1a', border: '1px solid #6b2a2a', borderRadius: 6, padding: '2px 8px', fontSize: 10, color: '#f87171', fontWeight: 600 }}>
+              🚫 {bannedNationality}
+            </span>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: 11, color: realtimeStatus === 'connected' ? '#4ade80' : '#6b7280' }}>
+            {realtimeStatus === 'connected' ? '🟢 Connecté' : '🔴 Déconnecté'}
+          </span>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: myColor }} />
           <span style={{ fontSize: 13, color: '#9ca3af' }}>{myName}</span>
           <button onClick={copyLink} style={{ background: 'none', border: '1px solid #1e2d3d', borderRadius: 6, padding: '4px 10px', color: '#6b7280', fontSize: 11, cursor: 'pointer' }}>
@@ -385,7 +243,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         </div>
       </div>
 
-      {/* Bannière tour */}
+      {/* Turn banner */}
       <div style={{
         margin: '12px 16px',
         padding: '12px 16px',
@@ -399,7 +257,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             {allDone ? '🏆 Draft terminé !' : isMyTurn ? '🎯 C\'est ton tour !' : `⏳ Tour de ${currentPlayer}`}
           </p>
           <p style={{ margin: '2px 0 0', fontSize: 11, color: '#4a5568' }}>
-            {picks.length} picks au total · {players.map(p => `${p} ${(teamsByPlayer[p]||[]).length}/11`).join(' · ')}
+            {picks.length} picks au total · {players.map(p => `${p} ${(teamsByPlayer[p] || []).length}/11`).join(' · ')}
           </p>
         </div>
         <button onClick={() => setShowPlayers(true)}
@@ -408,46 +266,23 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         </button>
       </div>
 
-      {/* Modale joueurs disponibles */}
-      {showPlayers && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 100, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-          onClick={() => setShowPlayers(false)}>
-          <div style={{ background: '#0d1117', border: '1px solid #1a2332', borderRadius: '16px 16px 0 0', width: '100%', maxWidth: 600, maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}
-            onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '16px', borderBottom: '1px solid #1a2332', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ fontWeight: 700, fontSize: 15 }}>Joueurs disponibles · {availablePlayers.length}</span>
-              <button onClick={() => setShowPlayers(false)} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 18, cursor: 'pointer' }}>✕</button>
-            </div>
-            <div style={{ padding: '12px 16px', display: 'flex', gap: 8, borderBottom: '1px solid #1a2332', flexWrap: 'wrap' }}>
-              <input placeholder="Rechercher..." value={filterSearch} onChange={e => setFilterSearch(e.target.value)}
-                style={{ flex: 1, minWidth: 120, background: '#111827', border: '1px solid #1a2332', borderRadius: 8, padding: '7px 12px', color: '#fff', fontSize: 13, outline: 'none' }} />
-              <select value={filterNat} onChange={e => setFilterNat(e.target.value)}
-                style={{ background: '#111827', border: '1px solid #1a2332', borderRadius: 8, padding: '7px 10px', color: filterNat ? '#fff' : '#6b7280', fontSize: 12, outline: 'none' }}>
-                <option value="">Toutes nations</option>
-                {allNats.map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-              <select value={filterPos} onChange={e => setFilterPos(e.target.value)}
-                style={{ background: '#111827', border: '1px solid #1a2332', borderRadius: 8, padding: '7px 10px', color: filterPos ? '#fff' : '#6b7280', fontSize: 12, outline: 'none' }}>
-                <option value="">Tous postes</option>
-                {allPos.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-            </div>
-            <div style={{ overflowY: 'auto', padding: '8px 16px 24px' }}>
-              {availablePlayers.slice(0, 200).map((p, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid #0f1923',
-                  cursor: isMyTurn ? 'pointer' : 'default' }}
-                  onClick={() => { if (isMyTurn) { setInput(p.name); setShowPlayers(false) } }}>
-                  <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 6px', color: '#6b7280', minWidth: 32, textAlign: 'center', fontWeight: 600 }}>{p.position}</span>
-                  <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0' }}>{p.name}</span>
-                  <span style={{ fontSize: 11, color: (globalNatCount[p.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>{p.nationality}</span>
-                  {isMyTurn && <span style={{ fontSize: 10, color: myColor, opacity: 0.7 }}>↑ choisir</span>}
-                </div>
-              ))}
-              {availablePlayers.length > 200 && <p style={{ fontSize: 12, color: '#4a5568', textAlign: 'center', paddingTop: 12 }}>Filtre pour affiner ({availablePlayers.length - 200} de plus)</p>}
-            </div>
-          </div>
-        </div>
-      )}
+      <PlayerList
+        show={showPlayers}
+        onClose={() => setShowPlayers(false)}
+        usedPlayers={usedPlayers}
+        filterSearch={filterSearch}
+        setFilterSearch={setFilterSearch}
+        filterNat={filterNat}
+        setFilterNat={setFilterNat}
+        filterPos={filterPos}
+        setFilterPos={setFilterPos}
+        globalNatCount={globalNatCount}
+        maxNat={MAX_NAT}
+        isMyTurn={isMyTurn}
+        myColor={myColor}
+        onSelect={name => { setInput(name); setShowPlayers(false) }}
+        allNats={allNats}
+      />
 
       {/* Input */}
       {isMyTurn && !allDone && (
@@ -455,8 +290,8 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           <input
             placeholder="Ex: Mbappé, Bellingham, Vinicius..."
             value={input}
-            onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            onChange={e => { setInput(e.target.value); setMatches([]) }}
+            onKeyDown={e => e.key === 'Enter' && submitPick(input.trim())}
             disabled={loading}
             style={{
               flex: 1, background: '#0d1117', border: `1px solid ${myColor}44`,
@@ -464,7 +299,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
               fontSize: 14, outline: 'none'
             }}
           />
-          <button onClick={handleSubmit} disabled={loading || !input.trim()}
+          <button onClick={() => submitPick(input.trim())} disabled={loading || !input.trim()}
             style={{
               background: myColor, border: 'none', borderRadius: 10,
               padding: '12px 20px', color: '#000', fontWeight: 700,
@@ -472,6 +307,34 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             }}>
             {loading ? '...' : '✓'}
           </button>
+        </div>
+      )}
+
+      {/* Disambiguation */}
+      {matches.length > 0 && (
+        <div style={{ margin: '0 16px 12px', background: '#0d1117', border: '1px solid #2d3748', borderRadius: 10, overflow: 'hidden' }}>
+          <div style={{ padding: '8px 14px', borderBottom: '1px solid #1a2332', fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+            Plusieurs joueurs correspondent — lequel ?
+          </div>
+          {matches.map((m, i) => (
+            <div key={i}
+              onClick={() => submitPick(m.name)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                padding: '10px 14px',
+                borderBottom: i < matches.length - 1 ? '1px solid #0f1923' : 'none',
+                cursor: 'pointer', transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#111827'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+            >
+              <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
+                {m.position}
+              </span>
+              <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0' }}>{m.name}</span>
+              <span style={{ fontSize: 11, color: '#4a5568' }}>{m.nationality}</span>
+            </div>
+          ))}
         </div>
       )}
 
@@ -487,7 +350,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         </div>
       )}
 
-      {/* Onglets équipes */}
+      {/* Team tabs */}
       <div style={{ margin: '0 16px 12px', display: 'flex', gap: 6, overflowX: 'auto' }}>
         {players.map((p, i) => (
           <button key={p} onClick={() => setViewTab(i)}
@@ -513,169 +376,81 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         )}
       </div>
 
-      {/* Vue résultats & notation */}
-      {viewTab === 'results' && (() => {
-        const sortedByScore = [...players].sort((a, b) => (teamScores[b] || 0) - (teamScores[a] || 0))
-        const maxPossible = 5 * MAX_PER_TEAM * (players.length - 1)
-        const medals = ['🥇', '🥈', '🥉', '4️⃣']
-        return (
-          <div style={{ padding: '0 16px 32px' }}>
-            {/* Leaderboard */}
-            <div style={{ background: '#0d1117', border: '1px solid #1a2332', borderRadius: 10, padding: '16px', marginBottom: 16 }}>
-              <p style={{ fontSize: 12, color: '#4a5568', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 14 }}>Classement</p>
-              {sortedByScore.map((p, rank) => {
-                const score = teamScores[p] || 0
-                const idx = players.indexOf(p)
-                const color = PLAYER_COLORS[idx]
-                const pct = maxPossible > 0 ? Math.min((score / maxPossible) * 100, 100) : 0
-                return (
-                  <div key={p} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: rank < sortedByScore.length - 1 ? 10 : 0 }}>
-                    <span style={{ fontSize: 16, width: 22, textAlign: 'center', flexShrink: 0 }}>{medals[rank]}</span>
-                    <span style={{ color, fontWeight: 700, fontSize: 14, minWidth: 70 }}>{p}{p === myName ? ' (toi)' : ''}</span>
-                    <div style={{ flex: 1, background: '#1a2332', borderRadius: 4, height: 6 }}>
-                      <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 4, transition: 'width 0.5s ease' }} />
-                    </div>
-                    <span style={{ fontSize: 13, color: '#9ca3af', minWidth: 48, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                      {score > 0 ? `⭐ ${score}` : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
+      {/* Results view */}
+      {viewTab === 'results' && (
+        <ResultsView
+          players={players}
+          teamsByPlayer={teamsByPlayer}
+          teamScores={teamScores}
+          ratings={ratings}
+          myName={myName}
+          myTeam={myTeam}
+          onRate={onRate}
+        />
+      )}
 
-            {/* Équipes des autres — notation interactive */}
-            {players.filter(p => p !== myName).map(p => {
-              const pIdx = players.indexOf(p)
-              const color = PLAYER_COLORS[pIdx]
-              const team = teamsByPlayer[p] || []
-              const rated = ratings.filter(r => team.some(pick => pick.id === r.pick_id) && r.rated_by === myName).length
+      {/* Pitch + player list */}
+      {viewTab !== 'results' && (
+        <div style={{ padding: '0 16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
+          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #1a2332' }}>
+            <FootballPitch
+              team={teamsByPlayer[players[viewTab]] || []}
+              color={PLAYER_COLORS[viewTab]}
+              isActive={players[viewTab] === myName}
+              myName={myName}
+              onUpdateCoords={onUpdateCoords}
+            />
+          </div>
+
+          <div>
+            <p style={{ fontSize: 11, color: '#4a5568', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Équipe de {players[viewTab]}
+            </p>
+            {(teamsByPlayer[players[viewTab]] || []).length === 0 && (
+              <p style={{ fontSize: 13, color: '#2d3748', fontStyle: 'italic' }}>Aucun joueur encore</p>
+            )}
+            {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => {
+              const isMyPick = entry.picked_by === myName
+              const isEditing = editingPosId === entry.id
               return (
-                <div key={p} style={{ background: '#0d1117', border: `1px solid ${color}33`, borderRadius: 10, marginBottom: 12 }}>
-                  <div style={{ padding: '12px 16px', borderBottom: '1px solid #1a2332', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                    <span style={{ fontWeight: 700, fontSize: 14 }}>Équipe de {p}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: 11, color: rated === team.length ? '#4ade80' : '#4a5568' }}>
-                      {rated}/{team.length} notés
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
+                  {isMyPick ? (
+                    <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                      <span
+                        onClick={() => setEditingPosId(isEditing ? null : entry.id)}
+                        title="Changer le poste"
+                        style={{ fontSize: 10, background: isEditing ? '#1e3a5f' : '#1a2332', border: `1px solid ${isEditing ? myColor + '88' : '#3d5a80'}`, borderRadius: 4, padding: '2px 5px', color: isEditing ? myColor : '#93c5fd', minWidth: 30, textAlign: 'center', fontWeight: 600, cursor: 'pointer', display: 'block', userSelect: 'none' }}>
+                        {entry.position}
+                      </span>
+                      {isEditing && (
+                        <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: '#0d1117', border: '1px solid #2d3748', borderRadius: 8, padding: '4px 0', minWidth: 76, boxShadow: '0 8px 24px rgba(0,0,0,0.7)' }}>
+                          {ALL_POSITIONS.map(pos => (
+                            <div key={pos}
+                              onClick={() => { onUpdatePos(entry.id, pos); setEditingPosId(null) }}
+                              style={{ padding: '5px 12px', fontSize: 12, color: pos === entry.position ? myColor : '#9ca3af', cursor: 'pointer', fontWeight: pos === entry.position ? 700 : 400, background: pos === entry.position ? myColor + '18' : 'transparent' }}>
+                              {pos}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
+                      {entry.position}
                     </span>
-                  </div>
-                  {team.map(pick => {
-                    const myRating = ratings.find(r => r.pick_id === pick.id && r.rated_by === myName)
-                    const allPickRatings = ratings.filter(r => r.pick_id === pick.id)
-                    const avg = allPickRatings.length > 0
-                      ? allPickRatings.reduce((s, r) => s + r.rating, 0) / allPickRatings.length
-                      : null
-                    return (
-                      <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #0f1923' }}>
-                        <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
-                          {pick.position}
-                        </span>
-                        <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {pick.player_name}
-                        </span>
-                        <Stars value={myRating?.rating} onChange={v => onRate(pick.id, myName, v)} size={17} />
-                        <span style={{ fontSize: 10, color: avg !== null ? '#6b7280' : '#2d3748', minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
-                          {avg !== null ? avg.toFixed(1) : ''}
-                        </span>
-                      </div>
-                    )
-                  })}
+                  )}
+                  <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {entry.player_name}
+                  </span>
+                  <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
+                    {entry.nationality}
+                  </span>
                 </div>
               )
             })}
-
-            {/* Mon équipe — notes reçues */}
-            <div style={{ background: '#0d1117', border: `1px solid ${myColor}33`, borderRadius: 10 }}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1a2332', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: myColor, flexShrink: 0 }} />
-                <span style={{ fontWeight: 700, fontSize: 14 }}>Mon équipe</span>
-                <span style={{ marginLeft: 'auto', fontSize: 11, color: '#4a5568' }}>Notes reçues</span>
-              </div>
-              {myTeam.map(pick => {
-                const allPickRatings = ratings.filter(r => r.pick_id === pick.id)
-                const avg = allPickRatings.length > 0
-                  ? allPickRatings.reduce((s, r) => s + r.rating, 0) / allPickRatings.length
-                  : null
-                return (
-                  <div key={pick.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #0f1923' }}>
-                    <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
-                      {pick.position}
-                    </span>
-                    <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      {pick.player_name}
-                    </span>
-                    <Stars value={avg !== null ? Math.round(avg) : 0} disabled size={17} />
-                    <span style={{ fontSize: 10, color: avg !== null ? '#9ca3af' : '#2d3748', minWidth: 26, textAlign: 'right', flexShrink: 0 }}>
-                      {avg !== null ? avg.toFixed(1) : '—'}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
           </div>
-        )
-      })()}
-
-      {/* Terrain + liste */}
-      {viewTab !== 'results' && <div style={{ padding: '0 16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
-        {/* Terrain de foot */}
-        <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #1a2332' }}>
-          <FootballPitch
-            team={teamsByPlayer[players[viewTab]] || []}
-            color={PLAYER_COLORS[viewTab]}
-            isActive={players[viewTab] === myName}
-            myName={myName}
-          />
         </div>
-
-        {/* Liste joueurs */}
-        <div>
-          <p style={{ fontSize: 11, color: '#4a5568', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Équipe de {players[viewTab]}
-          </p>
-          {(teamsByPlayer[players[viewTab]] || []).length === 0 && (
-            <p style={{ fontSize: 13, color: '#2d3748', fontStyle: 'italic' }}>Aucun joueur encore</p>
-          )}
-          {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => {
-            const isMyPick = entry.picked_by === myName
-            const isEditing = editingPosId === entry.id
-            return (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
-                {isMyPick ? (
-                  <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                    <span
-                      onClick={() => setEditingPosId(isEditing ? null : entry.id)}
-                      title="Changer le poste"
-                      style={{ fontSize: 10, background: isEditing ? '#1e3a5f' : '#1a2332', border: `1px solid ${isEditing ? myColor + '88' : '#3d5a80'}`, borderRadius: 4, padding: '2px 5px', color: isEditing ? myColor : '#93c5fd', minWidth: 30, textAlign: 'center', fontWeight: 600, cursor: 'pointer', display: 'block', userSelect: 'none' }}>
-                      {entry.position}
-                    </span>
-                    {isEditing && (
-                      <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: '#0d1117', border: '1px solid #2d3748', borderRadius: 8, padding: '4px 0', minWidth: 76, boxShadow: '0 8px 24px rgba(0,0,0,0.7)' }}>
-                        {allPos.map(pos => (
-                          <div key={pos}
-                            onClick={() => { onUpdatePos(entry.id, pos); setEditingPosId(null) }}
-                            style={{ padding: '5px 12px', fontSize: 12, color: pos === entry.position ? myColor : '#9ca3af', cursor: 'pointer', fontWeight: pos === entry.position ? 700 : 400, background: pos === entry.position ? myColor + '18' : 'transparent' }}>
-                            {pos}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
-                    {entry.position}
-                  </span>
-                )}
-                <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {entry.player_name}
-                </span>
-                <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
-                  {entry.nationality}
-                </span>
-              </div>
-            )
-          })}
-        </div>
-      </div>}
+      )}
     </div>
   )
 }
