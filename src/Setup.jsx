@@ -10,6 +10,7 @@ export default function Setup({ onCreate }) {
   const [bannedNationality, setBannedNationality] = useState('')
   const [shareUrl, setShareUrl] = useState('')
   const [creating, setCreating] = useState(false)
+  const [rulesOpen, setRulesOpen] = useState(false)
 
   function updateName(i, val) {
     setNames(prev => prev.map((n, idx) => idx === i ? val : n))
@@ -37,50 +38,61 @@ export default function Setup({ onCreate }) {
 
   return (
     <div>
-      <div style={{ marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 600, marginBottom: 4 }}>Draft CDM 2026 ⚽</h1>
+      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
+        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8 }}>⚽ LeOnze</h1>
+        <p style={{ fontSize: 16, color: '#aaa', marginBottom: 12 }}>Le jeu de draft de foot</p>
+        <p style={{ fontSize: 12, color: '#666' }}>🏆 1249 joueurs · 48 équipes · CDM 2026</p>
       </div>
 
-      <div style={{
-        background: '#111',
-        border: '1px solid #222',
-        borderRadius: 12,
-        padding: '20px',
-        marginBottom: '1.5rem',
-      }}>
-        <div style={{ marginBottom: 20 }}>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 6 }}>🎯 Le but du jeu</p>
-          <p style={{ fontSize: 13, color: '#888', lineHeight: 1.5 }}>
-            Construis le meilleur XI de la Coupe du Monde 2026 et compare-le avec tes potes !
-          </p>
-        </div>
+      <button
+        onClick={() => setRulesOpen(!rulesOpen)}
+        style={{
+          width: '100%',
+          background: 'transparent',
+          border: 'none',
+          padding: '12px 0',
+          marginBottom: rulesOpen ? 0 : '2rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+        }}
+      >
+        <span style={{ fontSize: 14, color: '#888' }}>📋 Voir les règles</span>
+        <span style={{ fontSize: 12, color: '#666', transform: rulesOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▼</span>
+      </button>
 
-        <div>
-          <p style={{ fontSize: 16, fontWeight: 600, color: '#fff', marginBottom: 12 }}>📋 Les règles</p>
+      {rulesOpen && (
+        <div style={{ marginBottom: '2rem', paddingTop: 8 }}>
+          <p style={{ fontSize: 14, color: '#aaa', marginBottom: 16, textAlign: 'center' }}>
+            🎯 Construis le meilleur XI de la Coupe du Monde 2026 et compare-le avec tes potes !
+          </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>🔄 Draft en serpentin</span> — L'ordre de sélection s'inverse à chaque round : J1→J2→J3→J4→J4→J3→J2→J1...
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>🔄 Draft en serpentin</span> — L'ordre s'inverse à chaque round
             </div>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>👤 1 pick par tour</span> — Chacun choisit un joueur à la fois, à son tour
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>👤 1 pick par tour</span> — Chacun choisit un joueur à la fois
             </div>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>🌍 Max 2 par nationalité</span> — Pas plus de 2 joueurs de la même nationalité sur l'ensemble du draft (tous participants confondus)
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>🌍 Max 2 par nationalité</span> — Sur l'ensemble du draft
             </div>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>🚫 Joueur bloqué</span> — Un joueur sélectionné est retiré du pool pour tout le monde
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>🚫 Joueur bloqué</span> — Un joueur pris est retiré du pool
             </div>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>⚽ Joueurs CDM 2026 uniquement</span> — Seuls les joueurs qualifiés pour la CDM 2026 sont acceptés
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>⚽ CDM 2026 uniquement</span> — Joueurs qualifiés seulement
             </div>
-            <div style={{ fontSize: 13, color: '#aaa', lineHeight: 1.4 }}>
-              <span style={{ color: '#fff' }}>🏆 11 joueurs</span> — Complète ton XI pour terminer la partie et comparer les équipes
+            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
+              <span style={{ color: '#aaa' }}>🏆 11 joueurs</span> — Complète ton XI pour finir
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       <div style={{ marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: 18, fontWeight: 600, color: '#fff', marginBottom: 16 }}>Nouvelle partie</p>
         <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Noms des participants (2 à 4)</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {names.map((n, i) => (
