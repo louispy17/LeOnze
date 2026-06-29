@@ -1,7 +1,5 @@
 import Stars from './Stars.jsx'
-
-const PLAYER_COLORS = ['#f59e0b', '#3b82f6', '#10b981', '#ef4444']
-const MAX_PER_TEAM = 11
+import { PLAYER_COLORS, MAX_PER_TEAM } from '../constants.js'
 
 export default function ResultsView({ players, teamsByPlayer, teamScores, ratings, myName, myTeam, onRate }) {
   const sortedByScore = [...players].sort((a, b) => (teamScores[b] || 0) - (teamScores[a] || 0))

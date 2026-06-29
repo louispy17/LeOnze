@@ -64,10 +64,11 @@ export default function App() {
       })
   }
 
-  async function createSession(playerNames, bannedNationality = null) {
+  async function createSession(playerNames, bannedNationality = null, coaches = {}) {
     const id = generateId()
     const insertData = { id, players: playerNames, status: 'active' }
     if (bannedNationality) insertData.banned_nationality = bannedNationality
+    if (Object.keys(coaches).length > 0) insertData.coaches = coaches
     const { data } = await supabase.from('draft_sessions').insert(insertData).select().single()
     setSession(data)
     setPicks([])

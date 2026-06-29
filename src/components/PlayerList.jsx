@@ -1,6 +1,5 @@
 import { PLAYERS } from '../players.js'
-
-const ALL_POSITIONS = ['GB', 'DC', 'DD', 'DG', 'MDC', 'MC', 'MO', 'AD', 'AG', 'ATT']
+import { ALL_POSITIONS } from '../constants.js'
 
 export default function PlayerList({
   show,
