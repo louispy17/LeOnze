@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { getAllNationalities } from './players.js'
-import { COACHES, getCoachInitials } from './data/coaches.js'
+import { COACHES } from './data/coaches.js'
 
 const allNats = getAllNationalities()
 
@@ -10,7 +10,6 @@ export default function Setup({ onCreate }) {
   const [bannedNationality, setBannedNationality] = useState('')
   const [shareUrl, setShareUrl] = useState('')
   const [creating, setCreating] = useState(false)
-  const [imgErrors, setImgErrors] = useState({})
 
   function updateName(i, val) {
     setNames(prev => prev.map((n, idx) => idx === i ? val : n))
@@ -60,116 +59,35 @@ export default function Setup({ onCreate }) {
 
       {filledNames.length > 0 && (
         <div style={{ marginBottom: '1.5rem' }}>
-          <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Choix du coach (optionnel)</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Choisis ton avatar 🎭</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filledNames.map(name => {
               const trimmed = name.trim()
-              const selectedCoach = coaches[trimmed]
+              const selectedCoach = coaches[trimmed] || ''
               return (
-                <div key={trimmed} style={{ background: '#111', border: '1px solid #222', borderRadius: 10, padding: '14px' }}>
-                  <p style={{ fontSize: 13, color: '#aaa', marginBottom: 12, fontWeight: 500 }}>{trimmed}</p>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(4, 1fr)',
-                    gap: 10,
-                  }}>
-                    {COACHES.map(coach => {
-                      const isSelected = selectedCoach === coach.id
-                      const isEmoji = !!coach.emoji
-                      return (
-                        <button
-                          key={coach.id}
-                          onClick={() => updateCoach(trimmed, isSelected ? null : coach.id)}
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            padding: '12px 8px 10px',
-                            borderRadius: 10,
-                            background: isEmoji
-                              ? 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)'
-                              : isSelected ? '#1a3a2a' : '#0a0a0a',
-                            border: `2px solid ${isSelected ? '#4ade80' : '#333'}`,
-                            cursor: 'pointer',
-                            transition: 'all 0.2s ease',
-                            position: 'relative',
-                            minWidth: 0,
-                          }}
-                        >
-                          {isSelected && (
-                            <div style={{
-                              position: 'absolute',
-                              top: 6,
-                              right: 6,
-                              width: 18,
-                              height: 18,
-                              borderRadius: '50%',
-                              background: '#4ade80',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}>
-                              <span style={{ fontSize: 11, color: '#000' }}>✓</span>
-                            </div>
-                          )}
-                          {coach.emoji ? (
-                            <div style={{
-                              width: 56,
-                              height: 56,
-                              borderRadius: '50%',
-                              background: 'linear-gradient(135deg, #2d2d44 0%, #1a1a2e 100%)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginBottom: 8,
-                              border: '1px solid #3d3d5c',
-                            }}>
-                              <span style={{ fontSize: 28 }}>{coach.emoji}</span>
-                            </div>
-                          ) : (
-                            <div style={{
-                              width: 56,
-                              height: 56,
-                              borderRadius: '50%',
-                              overflow: 'hidden',
-                              background: '#1a2332',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              marginBottom: 8,
-                              border: '1px solid #2d3748',
-                            }}>
-                              {coach.image && !imgErrors[coach.id] ? (
-                                <img
-                                  src={coach.image}
-                                  alt={coach.name}
-                                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                                  onError={() => setImgErrors(p => ({ ...p, [coach.id]: true }))}
-                                />
-                              ) : (
-                                <span style={{ fontSize: 18, fontWeight: 700, color: '#666' }}>
-                                  {getCoachInitials(coach.name)}
-                                </span>
-                              )}
-                            </div>
-                          )}
-                          <span style={{
-                            fontSize: 11,
-                            color: isSelected ? '#6ee7b7' : '#999',
-                            fontWeight: isSelected ? 600 : 400,
-                            textAlign: 'center',
-                            lineHeight: 1.2,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            width: '100%',
-                          }}>
-                            {coach.name}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
+                <div key={trimmed} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: 13, color: '#aaa', minWidth: 80 }}>{trimmed}</span>
+                  <select
+                    value={selectedCoach}
+                    onChange={e => updateCoach(trimmed, e.target.value || null)}
+                    style={{
+                      flex: 1,
+                      background: '#111',
+                      border: '1px solid #333',
+                      borderRadius: 8,
+                      padding: '10px 12px',
+                      color: selectedCoach ? '#fff' : '#666',
+                      fontSize: 14,
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="">Aucun</option>
+                    {COACHES.map(coach => (
+                      <option key={coach.id} value={coach.id}>
+                        {coach.emoji} {coach.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )
             })}
