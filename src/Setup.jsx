@@ -11,6 +11,9 @@ export default function Setup({ onCreate }) {
   const [shareUrl, setShareUrl] = useState('')
   const [creating, setCreating] = useState(false)
   const [rulesOpen, setRulesOpen] = useState(false)
+  const [gameMode, setGameMode] = useState('remote')
+
+  const placeholders = ['Ton prénom', 'Prénom du pote 2', 'Pote 3 (optionnel)', 'Pote 4 (optionnel)']
 
   function updateName(i, val) {
     setNames(prev => prev.map((n, idx) => idx === i ? val : n))
@@ -38,10 +41,10 @@ export default function Setup({ onCreate }) {
 
   return (
     <div>
-      <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-        <h1 style={{ fontSize: 36, fontWeight: 700, marginBottom: 8 }}>⚽ LeOnze</h1>
-        <p style={{ fontSize: 16, color: '#aaa', marginBottom: 12 }}>Le jeu de draft de foot</p>
-        <p style={{ fontSize: 12, color: '#666' }}>🏆 1249 joueurs · 48 équipes · CDM 2026</p>
+      <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+        <h1 style={{ fontSize: 40, fontWeight: 800, marginBottom: 10 }}>⚽ LeOnze</h1>
+        <p style={{ fontSize: 18, color: '#ccc', marginBottom: 8 }}>Le jeu de draft de foot entre potes</p>
+        <p style={{ fontSize: 13, color: '#666' }}>1249 joueurs · 48 équipes · CDM 2026</p>
       </div>
 
       <button
@@ -50,8 +53,8 @@ export default function Setup({ onCreate }) {
           width: '100%',
           background: 'transparent',
           border: 'none',
-          padding: '12px 0',
-          marginBottom: rulesOpen ? 0 : '2rem',
+          padding: '14px 0',
+          marginBottom: rulesOpen ? 0 : '2.5rem',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -59,46 +62,42 @@ export default function Setup({ onCreate }) {
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 14, color: '#888' }}>📋 Voir les règles</span>
+        <span style={{ fontSize: 15, color: '#9ca3af' }}>Comment ça marche ? 👀</span>
         <span style={{ fontSize: 12, color: '#666', transform: rulesOpen ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s' }}>▼</span>
       </button>
 
       {rulesOpen && (
-        <div style={{ marginBottom: '2rem', paddingTop: 8 }}>
-          <p style={{ fontSize: 14, color: '#aaa', marginBottom: 16, textAlign: 'center' }}>
-            🎯 Construis le meilleur XI de la Coupe du Monde 2026 et compare-le avec tes potes !
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>🔄 Draft en serpentin</span> — L'ordre s'inverse à chaque round
+        <div style={{ marginBottom: '2.5rem', paddingTop: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>🔄 Le draft tourne</span> — On choisit chacun son tour, dans un ordre qui s'inverse à chaque round
             </div>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>👤 1 pick par tour</span> — Chacun choisit un joueur à la fois
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>👤 Un joueur à la fois</span> — Pas de rush, tu réfléchis et tu picks
             </div>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>🌍 Max 2 par nationalité</span> — Sur l'ensemble du draft
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>🌍 Max 2 par nation</span> — Sur tout le draft, pas juste ton équipe
             </div>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>🚫 Joueur bloqué</span> — Un joueur pris est retiré du pool
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>🚫 Premier arrivé, premier servi</span> — Un joueur pris ? Il disparaît du pool
             </div>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>⚽ CDM 2026 uniquement</span> — Joueurs qualifiés seulement
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>⚽ CDM 2026 only</span> — Seuls les vrais qualifiés passent la validation
             </div>
-            <div style={{ fontSize: 13, color: '#777', lineHeight: 1.4 }}>
-              <span style={{ color: '#aaa' }}>🏆 11 joueurs</span> — Complète ton XI pour finir
+            <div style={{ fontSize: 14, color: '#9ca3af', lineHeight: 1.5 }}>
+              <span style={{ color: '#fff' }}>🏆 11 joueurs et c'est parti</span> — Complète ton XI pour comparer avec tes potes
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ marginBottom: '1.5rem' }}>
-        <p style={{ fontSize: 18, fontWeight: 600, color: '#fff', marginBottom: 16 }}>Nouvelle partie</p>
-        <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Noms des participants (2 à 4)</p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ marginBottom: '2rem' }}>
+        <p style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 20 }}>C'est parti 👊</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {names.map((n, i) => (
             <input
               key={i}
-              placeholder={`Joueur ${i + 1}${i >= 2 ? ' (optionnel)' : ''}`}
+              placeholder={placeholders[i]}
               value={n}
               onChange={e => updateName(i, e.target.value)}
               onKeyDown={e => e.key === 'Enter' && i === names.length - 1 && handleCreate()}
@@ -108,15 +107,15 @@ export default function Setup({ onCreate }) {
       </div>
 
       {filledNames.length > 0 && (
-        <div style={{ marginBottom: '1.5rem' }}>
-          <p style={{ fontSize: 13, color: '#888', marginBottom: 12 }}>Choisis ton avatar 🎭</p>
+        <div style={{ marginBottom: '2rem' }}>
+          <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 12 }}>Ton avatar pour cette partie 🎭</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filledNames.map(name => {
               const trimmed = name.trim()
               const selectedCoach = coaches[trimmed] || ''
               return (
-                <div key={trimmed} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 13, color: '#aaa', minWidth: 80 }}>{trimmed}</span>
+                <div key={trimmed} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 14, color: '#ccc', minWidth: 90 }}>{trimmed}</span>
                   <select
                     value={selectedCoach}
                     onChange={e => updateCoach(trimmed, e.target.value || null)}
@@ -145,8 +144,8 @@ export default function Setup({ onCreate }) {
         </div>
       )}
 
-      <div style={{ marginBottom: '1.5rem' }}>
-        <p style={{ fontSize: 13, color: '#888', marginBottom: 8 }}>Nationalité bannie (optionnel)</p>
+      <div style={{ marginBottom: '2rem' }}>
+        <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 10 }}>Envie de pimenter ? Banni une nation 🔥</p>
         <select
           value={bannedNationality}
           onChange={e => setBannedNationality(e.target.value)}
@@ -164,13 +163,51 @@ export default function Setup({ onCreate }) {
           <option value="">Aucune</option>
           {allNats.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
-        <p style={{ fontSize: 11, color: '#555', marginTop: 6 }}>
-          Les joueurs de cette nationalité ne pourront pas être sélectionnés.
+        <p style={{ fontSize: 12, color: '#9ca3af', marginTop: 8 }}>
+          Les joueurs de cette nationalité seront hors-jeu pour tout le monde
         </p>
       </div>
 
-      <button className="primary" onClick={handleCreate} disabled={creating} style={{ width: '100%', marginBottom: '1rem' }}>
-        {creating ? 'Création...' : 'Créer la session →'}
+      <div style={{ marginBottom: '2rem' }}>
+        <p style={{ fontSize: 14, color: '#9ca3af', marginBottom: 10 }}>Vous jouez comment ?</p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button
+            onClick={() => setGameMode('remote')}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              borderRadius: 8,
+              background: gameMode === 'remote' ? '#1a3a2a' : '#111',
+              border: `1px solid ${gameMode === 'remote' ? '#4ade80' : '#333'}`,
+              color: gameMode === 'remote' ? '#4ade80' : '#888',
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            📡 Chacun sur son écran
+          </button>
+          <button
+            onClick={() => setGameMode('local')}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              borderRadius: 8,
+              background: gameMode === 'local' ? '#1a3a2a' : '#111',
+              border: `1px solid ${gameMode === 'local' ? '#4ade80' : '#333'}`,
+              color: gameMode === 'local' ? '#4ade80' : '#888',
+              fontSize: 14,
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+            }}
+          >
+            🤝 On se passe le téléphone
+          </button>
+        </div>
+      </div>
+
+      <button className="primary" onClick={handleCreate} disabled={creating} style={{ width: '100%', marginBottom: '1.5rem', padding: '14px 20px', fontSize: 16 }}>
+        {creating ? 'Création...' : 'Lancer la partie 🚀'}
       </button>
 
       {shareUrl && (
