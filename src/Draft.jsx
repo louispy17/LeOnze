@@ -26,6 +26,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const [editingPosId, setEditingPosId] = useState(null)
   const [matches, setMatches] = useState([])
   const [handoffPlayer, setHandoffPlayer] = useState(null)
+  const [pendingPick, setPendingPick] = useState(null)
 
   const players = session.players
   const bannedNationality = session.banned_nationality
@@ -92,50 +93,65 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const myCoachId = coaches[myName]
   const myCoach = myCoachId ? getCoach(myCoachId) : null
 
-  async function submitPick(playerName) {
+  function validateAndSetPending(playerName) {
     setMatches([])
-    setLoading(true)
-    setStatus({ type: 'loading', msg: 'Validation...' })
-    try {
-      const result = validatePlayer({
-        playerName,
-        team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
-        usedPlayers,
-        allPicks: picks,
-        bannedNationality
+    setStatus(null)
+    const result = validatePlayer({
+      playerName,
+      team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
+      usedPlayers,
+      allPicks: picks,
+      bannedNationality
+    })
+    if (result.ambiguous) {
+      setMatches(result.matches)
+    } else if (!result.valid) {
+      setStatus({ type: 'err', msg: '❌ ' + (result.reason || 'Joueur invalide') })
+    } else {
+      setPendingPick({
+        name: result.name,
+        position: result.position,
+        nationality: result.nationality
       })
-      if (result.ambiguous) {
-        setMatches(result.matches)
-        setStatus(null)
-      } else if (!result.valid) {
-        setStatus({ type: 'err', msg: '❌ ' + (result.reason || 'Joueur invalide') })
-      } else {
-        await onPick({
-          player_name: result.name,
-          picked_by: myName,
-          nationality: result.nationality,
-          position: result.position,
-          turn_index: totalPicks
-        })
-        setStatus({ type: 'ok', msg: `✅ ${result.name} (${result.position}, ${result.nationality})` })
-        launchConfetti()
-        setInput('')
+      setInput('')
+      setShowPlayers(false)
+    }
+  }
 
-        const newTotal = totalPicks + 1
-        const allNowDone = players.every(p => p === myName
-          ? myTeam.length + 1 >= MAX_PER_TEAM
-          : (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
+  function cancelPendingPick() {
+    setPendingPick(null)
+    setStatus(null)
+  }
 
-        if (allNowDone) {
-          onEnd()
-        } else if (session.game_mode === 'local') {
-          const n = players.length
-          const round = Math.floor(newTotal / n)
-          const pos = newTotal % n
-          const idx = round % 2 === 0 ? pos : n - 1 - pos
-          const nextPlayer = players[idx]
-          setHandoffPlayer(nextPlayer)
-        }
+  async function confirmPick() {
+    if (!pendingPick) return
+    setLoading(true)
+    try {
+      await onPick({
+        player_name: pendingPick.name,
+        picked_by: myName,
+        nationality: pendingPick.nationality,
+        position: pendingPick.position,
+        turn_index: totalPicks
+      })
+      setStatus({ type: 'ok', msg: `✅ ${pendingPick.name} (${pendingPick.position}, ${pendingPick.nationality})` })
+      launchConfetti()
+      setPendingPick(null)
+
+      const newTotal = totalPicks + 1
+      const allNowDone = players.every(p => p === myName
+        ? myTeam.length + 1 >= MAX_PER_TEAM
+        : (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
+
+      if (allNowDone) {
+        onEnd()
+      } else if (session.game_mode === 'local') {
+        const n = players.length
+        const round = Math.floor(newTotal / n)
+        const pos = newTotal % n
+        const idx = round % 2 === 0 ? pos : n - 1 - pos
+        const nextPlayer = players[idx]
+        setHandoffPlayer(nextPlayer)
       }
     } catch {
       setStatus({ type: 'err', msg: '❌ Erreur inattendue, réessaie.' })
@@ -309,7 +325,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         maxNat={MAX_NAT}
         isMyTurn={isMyTurn}
         myColor={myColor}
-        onSelect={name => { setInput(name); setShowPlayers(false) }}
+        onSelect={name => validateAndSetPending(name)}
         allNats={allNats}
       />
 
@@ -319,8 +335,8 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           <input
             placeholder="Ex: Mbappé, Bellingham, Vinicius..."
             value={input}
-            onChange={e => { setInput(e.target.value); setMatches([]) }}
-            onKeyDown={e => e.key === 'Enter' && submitPick(input.trim())}
+            onChange={e => { setInput(e.target.value); setMatches([]); setPendingPick(null) }}
+            onKeyDown={e => e.key === 'Enter' && validateAndSetPending(input.trim())}
             disabled={loading}
             style={{
               flex: 1, background: '#0d1117', border: `1px solid ${myColor}44`,
@@ -328,7 +344,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
               fontSize: 14, outline: 'none'
             }}
           />
-          <button onClick={() => submitPick(input.trim())} disabled={loading || !input.trim()}
+          <button onClick={() => validateAndSetPending(input.trim())} disabled={loading || !input.trim() || pendingPick}
             style={{
               background: myColor, border: 'none', borderRadius: 10,
               padding: '12px 20px', color: '#000', fontWeight: 700,
@@ -347,7 +363,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           </div>
           {matches.map((m, i) => (
             <div key={i}
-              onClick={() => submitPick(m.name)}
+              onClick={() => validateAndSetPending(m.name)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px',
@@ -477,6 +493,73 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
                 </div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation bar */}
+      {pendingPick && (
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          background: 'linear-gradient(to top, #0d1117 0%, #0d1117ee 80%, transparent 100%)',
+          padding: '24px 16px 16px',
+          zIndex: 100,
+        }}>
+          <div style={{
+            background: myColor + '22',
+            border: `1px solid ${myColor}44`,
+            borderRadius: 12,
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {pendingPick.name}
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>
+                {pendingPick.position} · {pendingPick.nationality}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <button
+                onClick={cancelPendingPick}
+                style={{
+                  background: '#1f0f0f',
+                  border: '1px solid #4a1a1a',
+                  borderRadius: 8,
+                  padding: '10px 16px',
+                  color: '#f87171',
+                  fontSize: 14,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                ❌ Annuler
+              </button>
+              <button
+                onClick={confirmPick}
+                disabled={loading}
+                style={{
+                  background: myColor,
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '10px 16px',
+                  color: '#000',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  opacity: loading ? 0.5 : 1,
+                }}
+              >
+                {loading ? '...' : '✅ Confirmer'}
+              </button>
+            </div>
           </div>
         </div>
       )}
