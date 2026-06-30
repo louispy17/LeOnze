@@ -17,7 +17,7 @@ const RULES = [
   { emoji: '🌍', title: 'Max 2 par nation', desc: 'Sur tout le draft, pas juste ton équipe' },
   { emoji: '🚫', title: 'Premier arrivé, premier servi', desc: 'Un joueur pris ? Il disparaît du pool' },
   { emoji: '⚽', title: 'CDM 2026 only', desc: 'Seuls les vrais qualifiés passent la validation' },
-  { emoji: '🏆', title: '11 joueurs et c'est parti', desc: 'Complète ton XI pour comparer avec tes potes' },
+  { emoji: '🏆', title: "11 joueurs et c'est parti", desc: 'Complète ton XI pour comparer avec tes potes' },
 ]
 
 const styles = {
