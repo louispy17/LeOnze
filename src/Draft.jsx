@@ -25,6 +25,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const [confettis, setConfettis] = useState([])
   const [editingPosId, setEditingPosId] = useState(null)
   const [matches, setMatches] = useState([])
+  const [handoffPlayer, setHandoffPlayer] = useState(null)
 
   const players = session.players
   const bannedNationality = session.banned_nationality
@@ -119,11 +120,21 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         setStatus({ type: 'ok', msg: `✅ ${result.name} (${result.position}, ${result.nationality})` })
         launchConfetti()
         setInput('')
-        if (myTeam.length + 1 >= MAX_PER_TEAM) {
-          const allNowDone = players.every(p => p === myName
-            ? myTeam.length + 1 >= MAX_PER_TEAM
-            : (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
-          if (allNowDone) onEnd()
+
+        const newTotal = totalPicks + 1
+        const allNowDone = players.every(p => p === myName
+          ? myTeam.length + 1 >= MAX_PER_TEAM
+          : (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
+
+        if (allNowDone) {
+          onEnd()
+        } else if (session.game_mode === 'local') {
+          const n = players.length
+          const round = Math.floor(newTotal / n)
+          const pos = newTotal % n
+          const idx = round % 2 === 0 ? pos : n - 1 - pos
+          const nextPlayer = players[idx]
+          setHandoffPlayer(nextPlayer)
         }
       }
     } catch {
@@ -181,6 +192,55 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
       `}</style>
+
+      {/* Handoff overlay for local/same-phone mode */}
+      {handoffPlayer && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0, 0, 0, 0.95)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 24,
+        }}>
+          <div style={{ fontSize: 64, marginBottom: 24 }}>📱</div>
+          <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 8, textAlign: 'center' }}>
+            Passe le téléphone à
+          </p>
+          <p style={{ fontSize: 32, fontWeight: 800, color: PLAYER_COLORS[players.indexOf(handoffPlayer)], marginBottom: 16, textAlign: 'center' }}>
+            {handoffPlayer} !
+          </p>
+          {coaches[handoffPlayer] && (
+            <div style={{ marginBottom: 24 }}>
+              <CoachAvatar coachId={coaches[handoffPlayer]} size={64} />
+            </div>
+          )}
+          <button
+            onClick={() => {
+              setHandoffPlayer(null)
+              setMyName('')
+              setNameSet(false)
+              setStatus(null)
+            }}
+            style={{
+              background: PLAYER_COLORS[players.indexOf(handoffPlayer)],
+              border: 'none',
+              borderRadius: 12,
+              padding: '16px 32px',
+              color: '#000',
+              fontSize: 18,
+              fontWeight: 700,
+              cursor: 'pointer',
+              marginTop: 16,
+            }}
+          >
+            Je suis prêt 👊
+          </button>
+        </div>
+      )}
 
       {/* Header */}
       <div style={{ background: '#0d1117', borderBottom: '1px solid #1a2332', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
