@@ -60,12 +60,12 @@ export default function Setup({ onCreate }) {
       alert('Entrez au moins 2 noms.')
       return
     }
-    const coachMap = {}
+    const coachMap,gameMode = {}
     trimmedNames.forEach(name => {
-      if (coaches[name]) coachMap[name] = coaches[name]
+      if (coaches[name]) coachMap,gameMod[name] = coaches[name]
     })
     setCreating(true)
-    const url = await onCreate(trimmedNames, bannedNationality || null, coachMap)
+    const url = await onCreate(trimmedNames, bannedNationality || null, coachMap,gameMode)
     setShareUrl(url)
     setCreating(false)
   }

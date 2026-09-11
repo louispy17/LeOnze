@@ -64,9 +64,9 @@ export default function App() {
       })
   }
 
-  async function createSession(playerNames, bannedNationality = null, coaches = {}) {
+  async function createSession(playerNames, bannedNationality = null, coaches = {}, gameMode = 'remote') {
     const id = generateId()
-    const insertData = { id, players: playerNames, status: 'active' }
+    const insertData = { id, players: playerNames, status: 'active', game_mode: gameMode }, game_mode:gameMode }
     if (bannedNationality) insertData.banned_nationality = bannedNationality
     if (Object.keys(coaches).length > 0) insertData.coaches = coaches
     const { data } = await supabase.from('draft_sessions').insert(insertData).select().single()
