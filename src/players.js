@@ -6250,7 +6250,7 @@ function normalize(str) {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim()
 }
 
-export function validatePlayer({ playerName, team, usedPlayers, allPicks = [], bannedNationality = null }) {
+export function validatePlayer({ playerName, usedPlayers, allPicks = [], bannedNationality = null }) {
   const input = normalize(playerName)
   const allMatches = PLAYERS.filter(p => {
     const n = normalize(p.name)

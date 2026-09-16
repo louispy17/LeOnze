@@ -33,6 +33,7 @@ export default function App() {
       supabase.from('draft_ratings').select('*').eq('session_id', id)
     ])
     setSession(sess)
+    setLocalMode(sess.game_mode === 'local')
     setPicks(p || [])
     setRatings(r || [])
     sessionIdRef.current = id
@@ -68,16 +69,22 @@ export default function App() {
   async function createSession(playerNames, bannedNationality = null, coaches = {}, gameMode = 'remote') {
     const id = generateId()
     setLocalMode(gameMode === 'local')
-    const insertData = { id, players: playerNames, status: 'active' }
+    const insertData = { id, players: playerNames, status: 'active', game_mode: gameMode }
     if (bannedNationality) insertData.banned_nationality = bannedNationality
     if (Object.keys(coaches).length > 0) insertData.coaches = coaches
-    const { data } = await supabase.from('draft_sessions').insert(insertData).select().single()
-    setSession(data)
+
+    // Start the game immediately with the locally-known data instead of waiting
+    // on the network round-trip — the session id is already generated client-side.
+    setSession(insertData)
     setPicks([])
     sessionIdRef.current = id
     const url = window.location.origin + '?session=' + id
     window.history.pushState({}, '', '?session=' + id)
     subscribeRealtime(id)
+
+    supabase.from('draft_sessions').insert(insertData).select().single()
+      .then(({ data }) => { if (data) setSession(data) })
+
     return url
   }
 

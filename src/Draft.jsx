@@ -98,7 +98,6 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
     setStatus(null)
     const result = validatePlayer({
       playerName,
-      team: myTeam.map(p => ({ name: p.player_name, nationality: p.nationality, position: p.position })),
       usedPlayers,
       allPicks: picks,
       bannedNationality

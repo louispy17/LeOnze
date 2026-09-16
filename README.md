@@ -4,7 +4,6 @@ Jeu de draft en temps réel — construisez votre XI CDM 2026 avec vos amis.
 
 ## Stack
 - React + Vite (frontend)
-- Vercel Serverless Function (validation joueurs via Claude)
 - Supabase (BDD + Realtime)
 
 ## Déploiement
@@ -21,7 +20,6 @@ Jeu de draft en temps réel — construisez votre XI CDM 2026 avec vos amis.
 # Variables d'environnement à ajouter dans Vercel :
 VITE_SUPABASE_URL=        # Settings > API > Project URL
 VITE_SUPABASE_ANON_KEY=   # Settings > API > anon public key
-ANTHROPIC_API_KEY=         # console.anthropic.com > API Keys
 ```
 
 ### 3. C'est tout !
@@ -34,4 +32,4 @@ ANTHROPIC_API_KEY=         # console.anthropic.com > API Keys
 - 11 joueurs par équipe (formation libre)
 - Max 2 joueurs de la même nationalité
 - Un joueur pris est bloqué pour tous
-- Claude valide chaque pick (participation CDM 2026)
+- Seuls les joueurs qualifiés pour la CDM 2026 sont valides
