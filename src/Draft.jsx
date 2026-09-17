@@ -10,7 +10,7 @@ import CoachAvatar from './components/CoachAvatar.jsx'
 
 const allNats = getAllNationalities()
 
-export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected' }) {
+export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected', localMode = false }) {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -145,7 +145,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
 
       if (allNowDone) {
         onEnd()
-      } else if (session.game_mode === 'local') {
+      } else if (localMode) {
         const n = players.length
         const round = Math.floor(newTotal / n)
         const pos = newTotal % n

@@ -13,6 +13,7 @@ export default function App() {
   const [ratings, setRatings] = useState([])
   const [loading, setLoading] = useState(true)
   const [realtimeStatus, setRealtimeStatus] = useState('disconnected')
+  const [localMode, setLocalMode] = useState(false)
   const sessionIdRef = useRef(null)
 
   useEffect(() => {
@@ -66,7 +67,8 @@ export default function App() {
 
   async function createSession(playerNames, bannedNationality = null, coaches = {}, gameMode = 'remote') {
     const id = generateId()
-    const insertData = { id, players: playerNames, status: 'active', game_mode: gameMode }
+    setLocalMode(gameMode === 'local')
+    const insertData = { id, players: playerNames, status: 'active' }
     if (bannedNationality) insertData.banned_nationality = bannedNationality
     if (Object.keys(coaches).length > 0) insertData.coaches = coaches
     const { data } = await supabase.from('draft_sessions').insert(insertData).select().single()
@@ -128,6 +130,7 @@ export default function App() {
       onUpdatePos={updatePickPosition}
       onUpdateCoords={updatePickCoords}
       realtimeStatus={realtimeStatus}
+      localMode={localMode}
     />
   )
 }
