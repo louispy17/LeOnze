@@ -51,16 +51,27 @@ export default function FootballPitch({ team, color, isActive, myName, onUpdateC
   const posIdx = {}
 
   return (
-    <svg
-      ref={svgRef}
-      viewBox="0 0 300 420"
-      style={{ width: '100%', borderRadius: 8, display: 'block', touchAction: 'none' }}
-      onMouseMove={e => drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) }))}
-      onMouseUp={handleDragEnd}
-      onMouseLeave={handleDragEnd}
-      onTouchMove={e => { e.preventDefault(); drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) })) }}
-      onTouchEnd={handleDragEnd}
-    >
+    <div style={{ position: 'relative' }}>
+      {isActive && team.length < 11 && (
+        <div style={{
+          position: 'absolute', top: 10, left: 10, zIndex: 1,
+          background: 'rgba(0,0,0,0.45)', borderRadius: 999,
+          padding: '4px 10px', fontSize: 11, color: 'rgba(255,255,255,0.85)',
+          fontFamily: 'var(--font-mono)', pointerEvents: 'none',
+        }}>
+          {11 - team.length} joueur{11 - team.length > 1 ? 's' : ''} restant{11 - team.length > 1 ? 's' : ''}
+        </div>
+      )}
+      <svg
+        ref={svgRef}
+        viewBox="0 0 300 420"
+        style={{ width: '100%', borderRadius: 8, display: 'block', touchAction: 'none' }}
+        onMouseMove={e => drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) }))}
+        onMouseUp={handleDragEnd}
+        onMouseLeave={handleDragEnd}
+        onTouchMove={e => { e.preventDefault(); drag.current && setOverrides(p => ({ ...p, [drag.current]: toPct(e) })) }}
+        onTouchEnd={handleDragEnd}
+      >
       <defs>
         <linearGradient id={`grass-${color}`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1a472a" />
@@ -114,11 +125,7 @@ export default function FootballPitch({ team, color, isActive, myName, onUpdateC
         )
       })}
 
-      {isActive && team.length < 11 && (
-        <text x="150" y="210" textAnchor="middle" dominantBaseline="middle" fontSize="11" fill="rgba(255,255,255,0.2)" fontFamily="system-ui">
-          {11 - team.length} joueur{11 - team.length > 1 ? 's' : ''} restant{11 - team.length > 1 ? 's' : ''}
-        </text>
-      )}
-    </svg>
+      </svg>
+    </div>
   )
 }

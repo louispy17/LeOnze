@@ -44,7 +44,21 @@ create table if not exists draft_ratings (
   unique (pick_id, rated_by)
 );
 
--- Realtime sur les trois tables (ignore si déjà activé)
+-- Table des votes finaux (une équipe notée sur 4 critères, par chaque autre joueur)
+create table if not exists draft_team_votes (
+  id uuid primary key default gen_random_uuid(),
+  session_id text references draft_sessions(id) on delete cascade,
+  team_player text not null,
+  voted_by text not null,
+  technique integer not null check (technique between 1 and 5),
+  ambiance integer not null check (ambiance between 1 and 5),
+  audace integer not null check (audace between 1 and 5),
+  beau_jeu integer not null check (beau_jeu between 1 and 5),
+  created_at timestamptz default now(),
+  unique (session_id, team_player, voted_by)
+);
+
+-- Realtime sur les quatre tables (ignore si déjà activé)
 do $$
 begin
   if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'draft_sessions') then
@@ -56,12 +70,16 @@ begin
   if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'draft_ratings') then
     alter publication supabase_realtime add table draft_ratings;
   end if;
+  if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = 'draft_team_votes') then
+    alter publication supabase_realtime add table draft_team_votes;
+  end if;
 end $$;
 
 -- RLS (Row Level Security) : accès public pour simplifier
 alter table draft_sessions enable row level security;
 alter table draft_picks enable row level security;
 alter table draft_ratings enable row level security;
+alter table draft_team_votes enable row level security;
 
 drop policy if exists "public read sessions" on draft_sessions;
 create policy "public read sessions" on draft_sessions for select using (true);
@@ -83,3 +101,10 @@ drop policy if exists "public insert ratings" on draft_ratings;
 create policy "public insert ratings" on draft_ratings for insert with check (true);
 drop policy if exists "public update ratings" on draft_ratings;
 create policy "public update ratings" on draft_ratings for update using (true);
+
+drop policy if exists "public read team votes" on draft_team_votes;
+create policy "public read team votes" on draft_team_votes for select using (true);
+drop policy if exists "public insert team votes" on draft_team_votes;
+create policy "public insert team votes" on draft_team_votes for insert with check (true);
+drop policy if exists "public update team votes" on draft_team_votes;
+create policy "public update team votes" on draft_team_votes for update using (true);

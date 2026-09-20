@@ -5,16 +5,17 @@ import { getCoach } from './data/coaches.js'
 import FootballPitch from './components/FootballPitch.jsx'
 import PlayerList from './components/PlayerList.jsx'
 import PlayerSelect from './components/PlayerSelect.jsx'
-import ResultsView from './components/ResultsView.jsx'
 import CoachAvatar from './components/CoachAvatar.jsx'
+import TeamVoteCard from './components/TeamVoteCard.jsx'
+import WinnerReveal from './components/WinnerReveal.jsx'
 
 const allNats = getAllNationalities()
 
-export default function Draft({ session, picks, onPick, onEnd, ratings = [], onRate, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected', localMode = false }) {
+export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], onTeamVote, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected', localMode = false }) {
   const [input, setInput] = useState('')
   const [status, setStatus] = useState(null)
   const [loading, setLoading] = useState(false)
-  const [myName, setMyName] = useState('')
+  const [selectedName, setSelectedName] = useState('')
   const [nameSet, setNameSet] = useState(false)
   const [copied, setCopied] = useState(false)
   const [viewTab, setViewTab] = useState(0)
@@ -27,6 +28,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const [matches, setMatches] = useState([])
   const [handoffPlayer, setHandoffPlayer] = useState(null)
   const [pendingPick, setPendingPick] = useState(null)
+  const [votingIdx, setVotingIdx] = useState(0)
 
   const players = session.players
   const bannedNationality = session.banned_nationality
@@ -44,9 +46,42 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   const allDone = players.every(p => (teamsByPlayer[p] || []).length >= MAX_PER_TEAM)
   const totalPicks = picks.length
 
+  const votesComplete = allDone && players.length > 1 && teamVotes.length >= players.length * (players.length - 1)
+  const ranking = useMemo(() => {
+    if (!votesComplete) return []
+    return [...players]
+      .map(p => {
+        const votes = teamVotes.filter(v => v.team_player === p)
+        const avg = key => votes.length ? votes.reduce((s, v) => s + v[key], 0) / votes.length : 0
+        return {
+          name: p,
+          color: PLAYER_COLORS[players.indexOf(p)],
+          total: votes.reduce((s, v) => s + v.technique + v.ambiance + v.audace + v.beau_jeu, 0),
+          avg: { technique: avg('technique'), ambiance: avg('ambiance'), audace: avg('audace'), beau_jeu: avg('beau_jeu') },
+        }
+      })
+      .sort((a, b) => b.total - a.total)
+  }, [votesComplete, players, teamVotes])
+  const winner = ranking[0] || null
+
   useEffect(() => {
-    if (allDone) setViewTab('results')
-  }, [allDone])
+    if (winner) {
+      launchConfetti()
+      setViewTab('final')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!winner])
+
+  // Local mode: once the current voter has rated every other team, hand the
+  // phone to the next player so everyone votes on their own without peeking.
+  useEffect(() => {
+    if (!localMode || !allDone || handoffPlayer || votesComplete) return
+    const votesFromMe = teamVotes.filter(v => v.voted_by === players[votingIdx]).length
+    if (votesFromMe >= players.length - 1 && votingIdx < players.length - 1) {
+      setVotingIdx(i => i + 1)
+      setHandoffPlayer(players[votingIdx + 1])
+    }
+  }, [teamVotes, localMode, allDone, votingIdx, players, handoffPlayer, votesComplete])
 
   useEffect(() => {
     if (!editingPosId) return
@@ -61,17 +96,6 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
     return count
   }, [picks])
 
-  const teamScores = useMemo(() => {
-    const scores = {}
-    players.forEach(p => {
-      const teamPicks = teamsByPlayer[p] || []
-      scores[p] = ratings
-        .filter(r => teamPicks.some(pick => pick.id === r.pick_id))
-        .reduce((s, r) => s + r.rating, 0)
-    })
-    return scores
-  }, [players, teamsByPlayer, ratings])
-
   /**
    * Calculate current turn using serpentine draft order.
    * Goes 1→2→3→4→4→3→2→1→1→2→... pattern.
@@ -85,7 +109,13 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   }
 
   const currentPlayer = allDone ? null : currentTurnPlayer()
-  const isMyTurn = nameSet && currentPlayer === myName
+  // In local (pass-the-phone) mode the active player is always the one whose turn
+  // it algorithmically is, no manual "who are you" selection, so there's nothing to mis-tap.
+  // Once the draft is done, the same phone-passing mechanism drives the final vote instead.
+  const myName = localMode
+    ? (allDone ? players[votingIdx] : (currentPlayer || players[0]))
+    : (nameSet ? selectedName : '')
+  const isMyTurn = !!myName && currentPlayer === myName
   const usedPlayers = picks.map(p => p.player_name.toLowerCase())
   const myIndex = players.indexOf(myName)
   const myColor = PLAYER_COLORS[myIndex] || '#f59e0b'
@@ -144,6 +174,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
 
       if (allNowDone) {
         onEnd()
+        if (localMode) setHandoffPlayer(players[0])
       } else if (localMode) {
         const n = players.length
         const round = Math.floor(newTotal / n)
@@ -177,13 +208,13 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
     setTimeout(() => setCopied(false), 2000)
   }
 
-  if (!nameSet) {
+  if (!localMode && !nameSet) {
     return (
       <PlayerSelect
         players={players}
         teamsByPlayer={teamsByPlayer}
         coaches={coaches}
-        onSelect={name => { setMyName(name); setNameSet(true) }}
+        onSelect={name => { setSelectedName(name); setNameSet(true) }}
       />
     )
   }
@@ -240,9 +271,8 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             )}
             <button
               onClick={() => {
+                if (!allDone) setViewTab(players.indexOf(handoffPlayer))
                 setHandoffPlayer(null)
-                setMyName('')
-                setNameSet(false)
                 setStatus(null)
               }}
               style={{
@@ -335,21 +365,22 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
       />
 
       {/* Input */}
-      {isMyTurn && !allDone && (
+      {isMyTurn && !allDone && !pendingPick && (
         <div style={{ margin: '0 16px 12px', display: 'flex', gap: 8 }}>
           <input
             placeholder="Ex: Mbappé, Bellingham, Vinicius..."
             value={input}
-            onChange={e => { setInput(e.target.value); setMatches([]); setPendingPick(null) }}
+            onChange={e => { setInput(e.target.value); setMatches([]) }}
             onKeyDown={e => e.key === 'Enter' && validateAndSetPending(input.trim())}
             disabled={loading}
+            autoFocus
             style={{
               flex: 1, border: `1px solid ${myColor}55`,
               borderRadius: 12, padding: '12px 16px',
               fontSize: 14,
             }}
           />
-          <button onClick={() => validateAndSetPending(input.trim())} disabled={loading || !input.trim() || pendingPick}
+          <button onClick={() => validateAndSetPending(input.trim())} disabled={loading || !input.trim()}
             style={{
               background: myColor, border: 'none', borderRadius: 12,
               padding: '12px 20px', color: 'var(--ink)', fontWeight: 700,
@@ -357,6 +388,63 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             }}>
             {loading ? '...' : '✓'}
           </button>
+        </div>
+      )}
+
+      {/* Pick confirmation, right where you typed it */}
+      {pendingPick && (
+        <div style={{
+          margin: '0 16px 12px',
+          background: 'var(--surface)',
+          border: `1px solid ${myColor}55`,
+          borderRadius: 14,
+          padding: '12px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 12,
+          boxShadow: 'var(--shadow)',
+        }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {pendingPick.name}
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+              {pendingPick.position} · {pendingPick.nationality}
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              onClick={cancelPendingPick}
+              style={{
+                background: '#fee2e2',
+                border: '1px solid #fecaca',
+                borderRadius: 8,
+                padding: '10px 16px',
+                color: '#dc2626',
+                fontSize: 14,
+                fontWeight: 600,
+              }}
+            >
+              ❌ Annuler
+            </button>
+            <button
+              onClick={confirmPick}
+              disabled={loading}
+              style={{
+                background: myColor,
+                border: 'none',
+                borderRadius: 8,
+                padding: '10px 16px',
+                color: 'var(--ink)',
+                fontSize: 14,
+                fontWeight: 700,
+                opacity: loading ? 0.5 : 1,
+              }}
+            >
+              {loading ? '...' : '✅ Confirmer'}
+            </button>
+          </div>
         </div>
       )}
 
@@ -413,35 +501,27 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             {p} {p === myName ? '(toi)' : ''} · {(teamsByPlayer[p] || []).length}/11
           </button>
         ))}
-        {allDone && (
-          <button onClick={() => setViewTab('results')}
+        {winner && (
+          <button onClick={() => setViewTab('final')}
             style={{
-              background: viewTab === 'results' ? '#ffd700' : '#f2f6f3',
-              border: `1px solid ${viewTab === 'results' ? '#ffd700' : 'var(--border)'}`,
-              borderRadius: 8, padding: '6px 14px', color: viewTab === 'results' ? 'var(--ink)' : 'var(--text-muted)',
+              background: viewTab === 'final' ? '#ffd700' : '#f2f6f3',
+              border: `1px solid ${viewTab === 'final' ? '#ffd700' : 'var(--border)'}`,
+              borderRadius: 8, padding: '6px 14px', color: viewTab === 'final' ? 'var(--ink)' : 'var(--text-muted)',
               fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0
             }}>
-            🏆 Résultats
+            🏆 Résultat
           </button>
         )}
       </div>
 
-      {/* Results view */}
-      {viewTab === 'results' && (
-        <ResultsView
-          players={players}
-          teamsByPlayer={teamsByPlayer}
-          teamScores={teamScores}
-          ratings={ratings}
-          myName={myName}
-          myTeam={myTeam}
-          onRate={onRate}
-        />
+      {/* Final winner reveal */}
+      {viewTab === 'final' && winner && (
+        <WinnerReveal winner={winner} ranking={ranking} teamsByPlayer={teamsByPlayer} myName={myName} />
       )}
 
-      {/* Pitch + player list */}
-      {viewTab !== 'results' && (
-        <div className="draft-grid" style={{ padding: '0 16px 24px' }}>
+      {/* Pitch + team, with the vote panel right below when the draft is over */}
+      {viewTab !== 'final' && (
+      <div className="draft-grid" style={{ padding: '0 16px 24px' }}>
           <div style={{ borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
             <FootballPitch
               team={teamsByPlayer[players[viewTab]] || []}
@@ -498,75 +578,21 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
                 </div>
               )
             })}
+            {allDone && (
+              <TeamVoteCard
+                key={players[viewTab]}
+                teamPlayer={players[viewTab]}
+                color={PLAYER_COLORS[viewTab]}
+                myName={myName}
+                players={players}
+                teamVotes={teamVotes}
+                onVote={onTeamVote}
+              />
+            )}
           </div>
         </div>
       )}
 
-      {/* Confirmation bar */}
-      {pendingPick && (
-        <div style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          background: 'linear-gradient(to top, #eef3ef 0%, #eef3efee 80%, transparent 100%)',
-          padding: '24px 16px 16px',
-          zIndex: 100,
-        }}>
-          <div style={{
-            background: 'var(--surface)',
-            border: `1px solid ${myColor}55`,
-            borderRadius: 14,
-            padding: '12px 16px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 12,
-            boxShadow: '0 12px 32px rgba(13,35,24,0.15)',
-          }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {pendingPick.name}
-              </p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
-                {pendingPick.position} · {pendingPick.nationality}
-              </p>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-              <button
-                onClick={cancelPendingPick}
-                style={{
-                  background: '#fee2e2',
-                  border: '1px solid #fecaca',
-                  borderRadius: 8,
-                  padding: '10px 16px',
-                  color: '#dc2626',
-                  fontSize: 14,
-                  fontWeight: 600,
-                }}
-              >
-                ❌ Annuler
-              </button>
-              <button
-                onClick={confirmPick}
-                disabled={loading}
-                style={{
-                  background: myColor,
-                  border: 'none',
-                  borderRadius: 8,
-                  padding: '10px 16px',
-                  color: 'var(--ink)',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  opacity: loading ? 0.5 : 1,
-                }}
-              >
-                {loading ? '...' : '✅ Confirmer'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   )
 }
