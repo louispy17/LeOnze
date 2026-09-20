@@ -1,33 +1,37 @@
 import { useState } from 'react'
+import { COMPETITIONS } from '../competitions.js'
 
-const STEPS = [
-  {
-    emoji: '🏆',
-    title: "Le but ? Prouver que t'as le meilleur goût foot",
-    desc: "Chacun draft son XI de rêve avec les stars de la CDM 2026. Une fois les équipes bouclées, ce sont tes potes qui notent chaque pick. Meilleure moyenne, meilleur onze.",
-  },
-  {
-    emoji: '🔄',
-    title: 'Chacun son tour, un pick à la fois',
-    desc: "L'ordre s'inverse à chaque round (1→2→3→4→4→3→2→1...), donc pas toujours le même sens. Un joueur pris ? Il disparaît du pool pour tout le monde, alors dégaine vite.",
-  },
-  {
-    emoji: '🛂',
-    title: 'Ton pick peut être recalé, voici pourquoi',
-    desc: 'Seuls les vrais qualifiés pour la CDM 2026 sont valides. Et max 2 joueurs par nation sur tout le draft, pas que ton équipe : impossible de rafler toute une sélection.',
-  },
-  {
-    emoji: '🤝',
-    title: 'Deux façons de jouer',
-    desc: 'Chacun sur son écran avec un lien à partager, ou on se passe le même téléphone à chaque tour. À toi de choisir.',
-  },
-]
+function buildSteps(competition) {
+  return [
+    {
+      emoji: '🏆',
+      title: "Le but ? Prouver que t'as le meilleur goût foot",
+      desc: `Chacun draft son XI de rêve avec les stars de ${competition.poolLabel}. Une fois les équipes bouclées, ce sont tes potes qui notent chaque pick. Meilleure moyenne, meilleur onze.`,
+    },
+    {
+      emoji: '🔄',
+      title: 'Chacun son tour, un pick à la fois',
+      desc: "L'ordre s'inverse à chaque round (1→2→3→4→4→3→2→1...), donc pas toujours le même sens. Un joueur pris ? Il disparaît du pool pour tout le monde, alors dégaine vite.",
+    },
+    {
+      emoji: '🛂',
+      title: 'Ton pick peut être recalé, voici pourquoi',
+      desc: `Seuls les vrais joueurs de ${competition.poolLabel} sont valides. Et max 2 joueurs par ${competition.groupLabel} sur tout le draft, pas que ton équipe : impossible de rafler toute une sélection.`,
+    },
+    {
+      emoji: '🤝',
+      title: 'Deux façons de jouer',
+      desc: 'Chacun sur son écran avec un lien à partager, ou on se passe le même téléphone à chaque tour. À toi de choisir.',
+    },
+  ]
+}
 
-export default function Onboarding({ open, onClose }) {
+export default function Onboarding({ open, onClose, competition = COMPETITIONS.ucl }) {
   const [step, setStep] = useState(0)
 
   if (!open) return null
 
+  const STEPS = buildSteps(competition)
   const isLast = step === STEPS.length - 1
   const current = STEPS[step]
 

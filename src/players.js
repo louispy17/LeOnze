@@ -6250,14 +6250,19 @@ function normalize(str) {
   return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, '').trim()
 }
 
-export function validatePlayer({ playerName, usedPlayers, allPicks = [], bannedNationality = null }) {
+/**
+ * `nationality` doubles as the constraint-group field for every competition
+ * (a nation for the World Cup, a club for the Champions League) so the whole
+ * validation/draft engine works unchanged regardless of which pool is passed in.
+ */
+export function validatePlayer({ playerName, usedPlayers, allPicks = [], bannedNationality = null, players = PLAYERS, poolLabel = 'la CDM 2026', groupLabel = 'nation', maxPerGroup = 2 }) {
   const input = normalize(playerName)
-  const allMatches = PLAYERS.filter(p => {
+  const allMatches = players.filter(p => {
     const n = normalize(p.name)
     const parts = n.split(' ')
     return n === input || n.includes(input) || parts.some(part => part === input && input.length > 2)
   })
-  if (allMatches.length === 0) return { valid: false, reason: `"${playerName}" n'a pas participé à la CDM 2026 ou est inconnu.` }
+  if (allMatches.length === 0) return { valid: false, reason: `"${playerName}" ne fait pas partie de ${poolLabel} ou est inconnu.` }
   if (allMatches.length > 1) return { ambiguous: true, matches: allMatches.map(p => ({ name: p.name, nationality: p.nationality, position: p.position })) }
   const match = allMatches[0]
   if (bannedNationality && match.nationality === bannedNationality) {
@@ -6266,10 +6271,10 @@ export function validatePlayer({ playerName, usedPlayers, allPicks = [], bannedN
   if (usedPlayers.some(u => normalize(u) === normalize(match.name))) return { valid: false, reason: `${match.name} est déjà pris.` }
   const natCount = {}
   allPicks.forEach(e => { natCount[e.nationality] = (natCount[e.nationality] || 0) + 1 })
-  if ((natCount[match.nationality] || 0) >= 2) return { valid: false, reason: `Il y a déjà 2 joueurs de ${match.nationality} dans le draft.` }
+  if ((natCount[match.nationality] || 0) >= maxPerGroup) return { valid: false, reason: `Il y a déjà ${maxPerGroup} joueurs de ${match.nationality} (${groupLabel}) dans le draft.` }
   return { valid: true, name: match.name, nationality: match.nationality, position: match.position }
 }
 
-export function getAllNationalities() {
-  return [...new Set(PLAYERS.map(p => p.nationality))].sort()
+export function getAllNationalities(players = PLAYERS) {
+  return [...new Set(players.map(p => p.nationality))].sort()
 }

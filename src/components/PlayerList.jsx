@@ -1,9 +1,10 @@
-import { PLAYERS } from '../players.js'
 import { ALL_POSITIONS } from '../constants.js'
 
 export default function PlayerList({
   show,
   onClose,
+  players,
+  allGroupsLabel = 'Toutes les nations',
   usedPlayers,
   filterSearch,
   setFilterSearch,
@@ -20,7 +21,7 @@ export default function PlayerList({
 }) {
   if (!show) return null
 
-  const availablePlayers = PLAYERS.filter(p => {
+  const availablePlayers = players.filter(p => {
     const taken = usedPlayers.includes(p.name.toLowerCase())
     const matchSearch = !filterSearch || p.name.toLowerCase().includes(filterSearch.toLowerCase())
     const matchNat = !filterNat || p.nationality === filterNat
@@ -53,7 +54,7 @@ export default function PlayerList({
             onChange={e => setFilterNat(e.target.value)}
             style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 10px', color: filterNat ? 'var(--ink)' : 'var(--text-muted)', fontSize: 12, outline: 'none' }}
           >
-            <option value="">Toutes nations</option>
+            <option value="">{allGroupsLabel}</option>
             {allNats.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           <select

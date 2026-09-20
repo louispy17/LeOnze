@@ -8,7 +8,7 @@ import Onboarding from './Onboarding.jsx'
  * "Who are you?" screen shown before draft starts.
  * Each player picks their identity to join the draft.
  */
-export default function PlayerSelect({ players, teamsByPlayer, coaches, onSelect }) {
+export default function PlayerSelect({ players, teamsByPlayer, coaches, competition, onSelect }) {
   const [showOnboarding, setShowOnboarding] = useState(false)
 
   return (
@@ -17,7 +17,7 @@ export default function PlayerSelect({ players, teamsByPlayer, coaches, onSelect
         <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
           <div style={{ fontSize: 48, marginBottom: 8 }}>⚽</div>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 30, color: 'var(--ink)', margin: 0 }}>LeOnze</h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>Draft CDM 2026 · Qui es-tu ?</p>
+          <p style={{ color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>Draft {competition.shortLabel} · Qui es-tu ?</p>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {players.map((p, i) => {
@@ -58,7 +58,7 @@ export default function PlayerSelect({ players, teamsByPlayer, coaches, onSelect
         >
           Comment ça marche ? 👀
         </button>
-        <Onboarding open={showOnboarding} onClose={() => setShowOnboarding(false)} />
+        <Onboarding open={showOnboarding} onClose={() => setShowOnboarding(false)} competition={competition} />
       </div>
     </div>
   )

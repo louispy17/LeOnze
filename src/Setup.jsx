@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { getAllNationalities } from './players.js'
 import { COACHES } from './data/coaches.js'
+import { COMPETITIONS, DEFAULT_COMPETITION } from './competitions.js'
 import Onboarding from './components/Onboarding.jsx'
 
-const allNats = getAllNationalities()
 const ONBOARDING_SEEN_KEY = 'leonze_onboarding_seen'
+const COMPETITION_LIST = Object.values(COMPETITIONS)
 
 const PLACEHOLDERS = [
   'Ton prénom',
@@ -39,15 +40,23 @@ const styles = {
 export default function Setup({ onCreate }) {
   const [names, setNames] = useState(['', '', '', ''])
   const [coaches, setCoaches] = useState({})
+  const [competitionId, setCompetitionId] = useState(DEFAULT_COMPETITION)
   const [bannedNationality, setBannedNationality] = useState('')
   const [shareUrl, setShareUrl] = useState('')
   const [creating, setCreating] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [gameMode, setGameMode] = useState('remote')
 
+  const competition = COMPETITIONS[competitionId]
+  const allGroups = useMemo(() => getAllNationalities(competition.players), [competition])
+
   useEffect(() => {
     if (!localStorage.getItem(ONBOARDING_SEEN_KEY)) setShowOnboarding(true)
   }, [])
+
+  useEffect(() => {
+    setBannedNationality('')
+  }, [competitionId])
 
   function closeOnboarding() {
     localStorage.setItem(ONBOARDING_SEEN_KEY, '1')
@@ -75,7 +84,7 @@ export default function Setup({ onCreate }) {
       if (coaches[name]) coachMap[name] = coaches[name]
     })
     setCreating(true)
-    const url = await onCreate(trimmedNames, bannedNationality || null, coachMap, gameMode)
+    const url = await onCreate(trimmedNames, bannedNationality || null, coachMap, gameMode, competitionId)
     setShareUrl(url)
     setCreating(false)
   }
@@ -106,15 +115,15 @@ export default function Setup({ onCreate }) {
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 40, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
         <div>
-          <p className="eyebrow" style={{ marginBottom: 10 }}>Draft foot · CDM 2026</p>
+          <p className="eyebrow" style={{ marginBottom: 10 }}>Draft foot · {competition.shortLabel}</p>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 46, lineHeight: 1, color: 'var(--ink)', display: 'flex', alignItems: 'flex-end', gap: 6 }}>
             LeOnze
             <span style={{ width: 12, height: 12, background: 'var(--accent-bright)', borderRadius: 3, marginBottom: 6 }} />
           </h1>
           <p style={{ fontSize: 15.5, color: 'var(--text)', marginTop: 12 }}>Le jeu de draft de foot entre potes</p>
-          <p className="label-mono" style={{ marginTop: 8 }}>1249 joueurs · 48 équipes</p>
+          <p className="label-mono" style={{ marginTop: 8 }}>{competition.players.length} joueurs · {allGroups.length} {competition.groupLabelPlural}</p>
         </div>
         <button
           onClick={() => setShowOnboarding(true)}
@@ -124,7 +133,37 @@ export default function Setup({ onCreate }) {
         </button>
       </div>
 
-      <Onboarding open={showOnboarding} onClose={closeOnboarding} />
+      <Onboarding open={showOnboarding} onClose={closeOnboarding} competition={competition} />
+
+      {/* Competition */}
+      <div style={{ ...styles.card, marginBottom: 16 }}>
+        <p style={styles.cardTitle}>Quelle compétition ?</p>
+        <div style={{ display: 'flex', gap: 10 }}>
+          {COMPETITION_LIST.map(c => {
+            const isActive = c.id === competitionId
+            return (
+              <button
+                key={c.id}
+                onClick={() => setCompetitionId(c.id)}
+                style={{
+                  flex: 1,
+                  padding: '14px 16px',
+                  borderRadius: 12,
+                  background: isActive ? 'var(--accent-bright)' : '#f2f6f3',
+                  border: `1px solid ${isActive ? 'var(--accent-bright)' : 'var(--border)'}`,
+                  color: isActive ? 'var(--accent-ink)' : 'var(--ink-soft)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {c.emoji} {c.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
 
       <div style={styles.stack}>
         {/* Player names */}
@@ -173,19 +212,19 @@ export default function Setup({ onCreate }) {
           </div>
         )}
 
-        {/* Banned nationality */}
+        {/* Banned group */}
         <div style={styles.card}>
-          <p style={styles.cardTitle}>Envie de pimenter ? Banni une nation 🔥</p>
+          <p style={styles.cardTitle}>{competition.bannedTitle}</p>
           <select
             value={bannedNationality}
             onChange={e => setBannedNationality(e.target.value)}
             style={styles.select}
           >
-            <option value="">Aucune</option>
-            {allNats.map(n => <option key={n} value={n}>{n}</option>)}
+            <option value="">{competition.noneLabel}</option>
+            {allGroups.map(n => <option key={n} value={n}>{n}</option>)}
           </select>
           <p style={styles.helperText}>
-            Les joueurs de cette nationalité seront hors-jeu pour tout le monde
+            {competition.bannedHelper}
           </p>
         </div>
 

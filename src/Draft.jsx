@@ -2,14 +2,13 @@ import { useState, useMemo, useEffect } from 'react'
 import { validatePlayer, getAllNationalities } from './players.js'
 import { MAX_PER_TEAM, MAX_NAT, PLAYER_COLORS, ALL_POSITIONS } from './constants.js'
 import { getCoach } from './data/coaches.js'
+import { getCompetition } from './competitions.js'
 import FootballPitch from './components/FootballPitch.jsx'
 import PlayerList from './components/PlayerList.jsx'
 import PlayerSelect from './components/PlayerSelect.jsx'
 import CoachAvatar from './components/CoachAvatar.jsx'
 import TeamVoteCard from './components/TeamVoteCard.jsx'
 import WinnerReveal from './components/WinnerReveal.jsx'
-
-const allNats = getAllNationalities()
 
 export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], onTeamVote, onUpdatePos, onUpdateCoords, realtimeStatus = 'disconnected', localMode = false }) {
   const [input, setInput] = useState('')
@@ -33,6 +32,8 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
   const players = session.players
   const bannedNationality = session.banned_nationality
   const coaches = session.coaches || {}
+  const competition = getCompetition(session.competition)
+  const allNats = useMemo(() => getAllNationalities(competition.players), [competition])
 
   const teamsByPlayer = useMemo(() => {
     const map = {}
@@ -130,7 +131,11 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
       playerName,
       usedPlayers,
       allPicks: picks,
-      bannedNationality
+      bannedNationality,
+      players: competition.players,
+      poolLabel: competition.poolLabel,
+      groupLabel: competition.groupLabel,
+      maxPerGroup: MAX_NAT
     })
     if (result.ambiguous) {
       setMatches(result.matches)
@@ -156,13 +161,18 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
     if (!pendingPick) return
     setLoading(true)
     try {
-      await onPick({
+      const saved = await onPick({
         player_name: pendingPick.name,
         picked_by: myName,
         nationality: pendingPick.nationality,
         position: pendingPick.position,
         turn_index: totalPicks
       })
+      if (!saved) {
+        setStatus({ type: 'err', msg: '❌ Le pick n\'a pas pu être enregistré, réessaie.' })
+        setLoading(false)
+        return
+      }
       setStatus({ type: 'ok', msg: `✅ ${pendingPick.name} (${pendingPick.position}, ${pendingPick.nationality})` })
       launchConfetti()
       setPendingPick(null)
@@ -214,6 +224,7 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
         players={players}
         teamsByPlayer={teamsByPlayer}
         coaches={coaches}
+        competition={competition}
         onSelect={name => { setSelectedName(name); setNameSet(true) }}
       />
     )
@@ -298,7 +309,7 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
           <span style={{ fontSize: 20 }}>⚽</span>
           <div>
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, letterSpacing: '-0.3px' }}>LeOnze</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>CDM 2026</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>{competition.shortLabel}</span>
           </div>
           {bannedNationality && (
             <span style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 6, padding: '2px 8px', fontSize: 10, color: '#dc2626', fontWeight: 600 }}>
@@ -349,6 +360,8 @@ export default function Draft({ session, picks, onPick, onEnd, teamVotes = [], o
       <PlayerList
         show={showPlayers}
         onClose={() => setShowPlayers(false)}
+        players={competition.players}
+        allGroupsLabel={competition.allGroupsLabel}
         usedPlayers={usedPlayers}
         filterSearch={filterSearch}
         setFilterSearch={setFilterSearch}

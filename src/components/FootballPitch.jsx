@@ -1,24 +1,34 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useMemo } from 'react'
 
-const POS_COORDS = {
-  GB:  { x: 50, y: 88 },
-  DC:  { x: 50, y: 72 },
-  DD:  { x: 78, y: 72 },
-  DG:  { x: 22, y: 72 },
-  MDC: { x: 50, y: 55 },
-  MC:  { x: 35, y: 48 },
-  MO:  { x: 65, y: 42 },
-  AD:  { x: 78, y: 28 },
-  AG:  { x: 22, y: 28 },
-  ATT: { x: 50, y: 18 },
-}
+// Players are laid out by line (keeper/defense/midfield/attack) rather than by
+// exact position, so a team can never end up with a lopsided pile of icons in
+// one corner no matter which mix of positions was actually drafted.
+const TIER_OF = { GB: 'GB', DC: 'DEF', DD: 'DEF', DG: 'DEF', MDC: 'MID', MC: 'MID', MO: 'MID', AD: 'ATT', AG: 'ATT', ATT: 'ATT' }
+const TIER_Y = { GB: 88, DEF: 72, MID: 48, ATT: 18 }
+const TIER_ORDER = ['GB', 'DEF', 'MID', 'ATT']
+const MAX_PER_ROW = 5
 
-function getPosCoords(pos, idx, total) {
-  const base = POS_COORDS[pos] || { x: 50, y: 50 }
-  if (total === 1) return base
-  const step = total === 2 ? 24 : 16
-  const offset = (idx - (total - 1) / 2) * step
-  return { x: Math.max(6, Math.min(94, base.x + offset)), y: base.y }
+function layoutTeam(team) {
+  const tiers = { GB: [], DEF: [], MID: [], ATT: [] }
+  team.forEach(entry => {
+    tiers[TIER_OF[entry.position] || 'MID'].push(entry)
+  })
+  const coords = {}
+  TIER_ORDER.forEach(tier => {
+    const entries = tiers[tier]
+    if (entries.length === 0) return
+    const rowCount = Math.ceil(entries.length / MAX_PER_ROW)
+    entries.forEach((entry, i) => {
+      const row = Math.floor(i / MAX_PER_ROW)
+      const rowStart = row * MAX_PER_ROW
+      const rowSize = Math.min(MAX_PER_ROW, entries.length - rowStart)
+      const posInRow = i - rowStart
+      const x = rowSize === 1 ? 50 : 12 + posInRow * (76 / (rowSize - 1))
+      const rowOffset = rowCount > 1 ? (row - (rowCount - 1) / 2) * 11 : 0
+      coords[entry.id] = { x, y: Math.max(6, Math.min(94, TIER_Y[tier] + rowOffset)) }
+    })
+  })
+  return coords
 }
 
 export default function FootballPitch({ team, color, isActive, myName, onUpdateCoords }) {
@@ -46,9 +56,7 @@ export default function FootballPitch({ team, color, isActive, myName, onUpdateC
     drag.current = null
   }
 
-  const posTotals = {}
-  team.forEach(entry => { posTotals[entry.position] = (posTotals[entry.position] || 0) + 1 })
-  const posIdx = {}
+  const layout = useMemo(() => layoutTeam(team), [team])
 
   return (
     <div style={{ position: 'relative' }}>
@@ -94,12 +102,9 @@ export default function FootballPitch({ team, color, isActive, myName, onUpdateC
       <circle cx="150" cy="363" r="2" fill="rgba(255,255,255,0.5)" />
 
       {team.map((entry, i) => {
-        const pos = entry.position
-        const idx = posIdx[pos] || 0
-        posIdx[pos] = idx + 1
         const base = (entry.pos_x != null && entry.pos_y != null)
           ? { x: entry.pos_x, y: entry.pos_y }
-          : getPosCoords(pos, idx, posTotals[pos])
+          : (layout[entry.id] || { x: 50, y: 50 })
         const o = overrides[entry.id]
         const cx = ((o?.x ?? base.x) / 100) * 300
         const cy = ((o?.y ?? base.y) / 100) * 420

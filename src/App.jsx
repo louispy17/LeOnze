@@ -66,10 +66,10 @@ export default function App() {
       })
   }
 
-  async function createSession(playerNames, bannedNationality = null, coaches = {}, gameMode = 'remote') {
+  async function createSession(playerNames, bannedNationality = null, coaches = {}, gameMode = 'remote', competition = 'ucl') {
     const id = generateId()
     setLocalMode(gameMode === 'local')
-    const insertData = { id, players: playerNames, status: 'active', game_mode: gameMode }
+    const insertData = { id, players: playerNames, status: 'active', game_mode: gameMode, competition }
     if (bannedNationality) insertData.banned_nationality = bannedNationality
     if (Object.keys(coaches).length > 0) insertData.coaches = coaches
 

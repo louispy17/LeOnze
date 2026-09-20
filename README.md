@@ -1,6 +1,6 @@
-# Draft CDM 2026 ⚽
+# LeOnze ⚽
 
-Jeu de draft en temps réel : construisez votre XI CDM 2026 avec vos amis.
+Jeu de draft en temps réel : construisez votre XI de rêve avec vos amis, en Ligue des Champions ou en Coupe du Monde.
 
 ## Stack
 - React + Vite (frontend)
@@ -30,6 +30,6 @@ VITE_SUPABASE_ANON_KEY=   # Settings > API > anon public key
 ## Règles du jeu
 - 4 joueurs max
 - 11 joueurs par équipe (formation libre)
-- Max 2 joueurs de la même nationalité
+- Max 2 joueurs du même club (LDC) ou de la même nation (CDM)
 - Un joueur pris est bloqué pour tous
-- Seuls les joueurs qualifiés pour la CDM 2026 sont valides
+- Seuls les joueurs de la compétition choisie sont valides

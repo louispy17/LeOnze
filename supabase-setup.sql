@@ -9,12 +9,15 @@ create table if not exists draft_sessions (
   game_mode text not null default 'remote',
   banned_nationality text,
   coaches jsonb not null default '{}',
+  competition text not null default 'cdm',
   created_at timestamptz default now()
 );
 
 alter table draft_sessions add column if not exists game_mode text not null default 'remote';
 alter table draft_sessions add column if not exists banned_nationality text;
 alter table draft_sessions add column if not exists coaches jsonb not null default '{}';
+-- Existing sessions predate multi-competition support and were all CDM games.
+alter table draft_sessions add column if not exists competition text not null default 'cdm';
 
 -- Table des picks
 create table if not exists draft_picks (
