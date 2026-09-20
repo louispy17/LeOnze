@@ -58,7 +58,7 @@ begin
   end if;
 end $$;
 
--- RLS (Row Level Security) — accès public pour simplifier
+-- RLS (Row Level Security) : accès public pour simplifier
 alter table draft_sessions enable row level security;
 alter table draft_picks enable row level security;
 alter table draft_ratings enable row level security;

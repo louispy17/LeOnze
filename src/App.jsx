@@ -74,7 +74,7 @@ export default function App() {
     if (Object.keys(coaches).length > 0) insertData.coaches = coaches
 
     // Start the game immediately with the locally-known data instead of waiting
-    // on the network round-trip — the session id is already generated client-side.
+    // on the network round-trip, since the session id is already generated client-side.
     setSession(insertData)
     setPicks([])
     sessionIdRef.current = id
@@ -121,7 +121,7 @@ export default function App() {
   }
 
   if (loading) return (
-    <div style={{ textAlign: 'center', paddingTop: '4rem', color: '#666' }}>Chargement...</div>
+    <div style={{ textAlign: 'center', paddingTop: '4rem', color: 'var(--text-muted)' }}>Chargement...</div>
   )
 
   if (!session) return <Setup onCreate={createSession} />

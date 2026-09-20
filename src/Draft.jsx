@@ -189,7 +189,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#080c10', color: '#fff', fontFamily: 'system-ui, sans-serif', position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', color: 'var(--ink)', position: 'relative', overflow: 'hidden' }}>
       {confettis.map(c => (
         <div key={c.id} style={{
           position: 'fixed', top: '-10px', left: `${c.x}%`,
@@ -213,7 +213,7 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(0, 0, 0, 0.95)',
+          background: 'rgba(13, 35, 24, 0.45)',
           zIndex: 1000,
           display: 'flex',
           flexDirection: 'column',
@@ -221,67 +221,72 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           justifyContent: 'center',
           padding: 24,
         }}>
-          <div style={{ fontSize: 64, marginBottom: 24 }}>📱</div>
-          <p style={{ fontSize: 24, fontWeight: 700, color: '#fff', marginBottom: 8, textAlign: 'center' }}>
-            Passe le téléphone à
-          </p>
-          <p style={{ fontSize: 32, fontWeight: 800, color: PLAYER_COLORS[players.indexOf(handoffPlayer)], marginBottom: 16, textAlign: 'center' }}>
-            {handoffPlayer} !
-          </p>
-          {coaches[handoffPlayer] && (
-            <div style={{ marginBottom: 24 }}>
-              <CoachAvatar coachId={coaches[handoffPlayer]} size={64} />
-            </div>
-          )}
-          <button
-            onClick={() => {
-              setHandoffPlayer(null)
-              setMyName('')
-              setNameSet(false)
-              setStatus(null)
-            }}
-            style={{
-              background: PLAYER_COLORS[players.indexOf(handoffPlayer)],
-              border: 'none',
-              borderRadius: 12,
-              padding: '16px 32px',
-              color: '#000',
-              fontSize: 18,
-              fontWeight: 700,
-              cursor: 'pointer',
-              marginTop: 16,
-            }}
-          >
-            Je suis prêt 👊
-          </button>
+          <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 24,
+            padding: '40px 32px', maxWidth: 340, width: '100%', textAlign: 'center',
+            boxShadow: '0 24px 60px rgba(13,35,24,0.3)',
+          }}>
+            <div style={{ fontSize: 56, marginBottom: 20 }}>📱</div>
+            <p style={{ fontSize: 15, color: 'var(--text-muted)', marginBottom: 8 }}>
+              Passe le téléphone à
+            </p>
+            <p style={{ fontFamily: 'var(--font-display)', fontSize: 30, color: PLAYER_COLORS[players.indexOf(handoffPlayer)], marginBottom: 20 }}>
+              {handoffPlayer}
+            </p>
+            {coaches[handoffPlayer] && (
+              <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
+                <CoachAvatar coachId={coaches[handoffPlayer]} size={64} />
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setHandoffPlayer(null)
+                setMyName('')
+                setNameSet(false)
+                setStatus(null)
+              }}
+              style={{
+                width: '100%',
+                background: PLAYER_COLORS[players.indexOf(handoffPlayer)],
+                border: 'none',
+                borderRadius: 12,
+                padding: '14px 32px',
+                color: 'var(--ink)',
+                fontSize: 16,
+                fontWeight: 700,
+              }}
+            >
+              Je suis prêt 👊
+            </button>
+          </div>
         </div>
       )}
 
       {/* Header */}
-      <div style={{ background: '#0d1117', borderBottom: '1px solid #1a2332', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
+      <div style={{ background: 'var(--surface)', borderBottom: '1px solid var(--border)', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 20 }}>⚽</span>
           <div>
-            <span style={{ fontWeight: 800, fontSize: 15, letterSpacing: '-0.3px' }}>LeOnze</span>
-            <span style={{ color: '#4a5568', fontSize: 12, marginLeft: 8 }}>CDM 2026</span>
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 15, letterSpacing: '-0.3px' }}>LeOnze</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: 12, marginLeft: 8 }}>CDM 2026</span>
           </div>
           {bannedNationality && (
-            <span style={{ background: '#4a1a1a', border: '1px solid #6b2a2a', borderRadius: 6, padding: '2px 8px', fontSize: 10, color: '#f87171', fontWeight: 600 }}>
+            <span style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: 6, padding: '2px 8px', fontSize: 10, color: '#dc2626', fontWeight: 600 }}>
               🚫 {bannedNationality}
             </span>
           )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, color: realtimeStatus === 'connected' ? '#4ade80' : '#6b7280' }}>
+          <span style={{ fontSize: 11, color: realtimeStatus === 'connected' ? 'var(--accent)' : 'var(--text-muted)' }}>
             {realtimeStatus === 'connected' ? '🟢 Connecté' : '🔴 Déconnecté'}
           </span>
           {myCoachId && <CoachAvatar coachId={myCoachId} size={24} />}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-            <span style={{ fontSize: 13, color: '#9ca3af' }}>{myName}</span>
-            {myCoach && <span style={{ fontSize: 9, color: '#4a5568' }}>{myCoach.name}</span>}
+            <span style={{ fontSize: 13, color: 'var(--text)' }}>{myName}</span>
+            {myCoach && <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>{myCoach.name}</span>}
           </div>
           <div style={{ width: 8, height: 8, borderRadius: '50%', background: myColor }} />
-          <button onClick={copyLink} style={{ background: 'none', border: '1px solid #1e2d3d', borderRadius: 6, padding: '4px 10px', color: '#6b7280', fontSize: 11, cursor: 'pointer' }}>
+          <button onClick={copyLink} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', color: 'var(--text-muted)', fontSize: 11, fontWeight: 500 }}>
             {copied ? '✓ Copié' : '🔗 Partager'}
           </button>
         </div>
@@ -291,21 +296,22 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
       <div style={{
         margin: '12px 16px',
         padding: '12px 16px',
-        borderRadius: 10,
-        background: isMyTurn ? `linear-gradient(135deg, ${myColor}22, ${myColor}11)` : '#0d1117',
-        border: `1px solid ${isMyTurn ? myColor + '44' : '#1a2332'}`,
+        borderRadius: 14,
+        background: isMyTurn ? `linear-gradient(135deg, ${myColor}1a, ${myColor}0d)` : 'var(--surface)',
+        border: `1px solid ${isMyTurn ? myColor + '55' : 'var(--border)'}`,
+        boxShadow: 'var(--shadow)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between'
       }}>
         <div>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isMyTurn ? myColor : '#9ca3af' }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: isMyTurn ? myColor : 'var(--ink)' }}>
             {allDone ? '🏆 Draft terminé !' : isMyTurn ? '🎯 C\'est ton tour !' : `⏳ Tour de ${currentPlayer}`}
           </p>
-          <p style={{ margin: '2px 0 0', fontSize: 11, color: '#4a5568' }}>
-            {picks.length} picks au total · {players.map(p => `${p} ${(teamsByPlayer[p] || []).length}/11`).join(' · ')}
+          <p className="label-mono" style={{ margin: '4px 0 0' }}>
+            {picks.length} picks · {players.map(p => `${p} ${(teamsByPlayer[p] || []).length}/11`).join(' · ')}
           </p>
         </div>
         <button onClick={() => setShowPlayers(true)}
-          style={{ background: '#1a2332', border: '1px solid #2d3748', borderRadius: 8, padding: '6px 12px', color: '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
+          style={{ background: '#f2f6f3', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 12px', color: 'var(--ink-soft)', fontSize: 12 }}>
           📋 Joueurs dispo
         </button>
       </div>
@@ -338,16 +344,16 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             onKeyDown={e => e.key === 'Enter' && validateAndSetPending(input.trim())}
             disabled={loading}
             style={{
-              flex: 1, background: '#0d1117', border: `1px solid ${myColor}44`,
-              borderRadius: 10, padding: '12px 16px', color: '#fff',
-              fontSize: 14, outline: 'none'
+              flex: 1, border: `1px solid ${myColor}55`,
+              borderRadius: 12, padding: '12px 16px',
+              fontSize: 14,
             }}
           />
           <button onClick={() => validateAndSetPending(input.trim())} disabled={loading || !input.trim() || pendingPick}
             style={{
-              background: myColor, border: 'none', borderRadius: 10,
-              padding: '12px 20px', color: '#000', fontWeight: 700,
-              fontSize: 14, cursor: 'pointer', opacity: loading || !input.trim() ? 0.5 : 1
+              background: myColor, border: 'none', borderRadius: 12,
+              padding: '12px 20px', color: 'var(--ink)', fontWeight: 700,
+              fontSize: 14, opacity: loading || !input.trim() ? 0.5 : 1
             }}>
             {loading ? '...' : '✓'}
           </button>
@@ -356,9 +362,9 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
 
       {/* Disambiguation */}
       {matches.length > 0 && (
-        <div style={{ margin: '0 16px 12px', background: '#0d1117', border: '1px solid #2d3748', borderRadius: 10, overflow: 'hidden' }}>
-          <div style={{ padding: '8px 14px', borderBottom: '1px solid #1a2332', fontSize: 11, color: '#6b7280', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-            Plusieurs joueurs correspondent — lequel ?
+        <div style={{ margin: '0 16px 12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
+          <div className="label-mono" style={{ padding: '8px 14px', borderBottom: '1px solid var(--border)' }}>
+            Plusieurs joueurs correspondent, lequel ?
           </div>
           {matches.map((m, i) => (
             <div key={i}
@@ -366,17 +372,17 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 padding: '10px 14px',
-                borderBottom: i < matches.length - 1 ? '1px solid #0f1923' : 'none',
+                borderBottom: i < matches.length - 1 ? '1px solid var(--border)' : 'none',
                 cursor: 'pointer', transition: 'background 0.1s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#111827'}
+              onMouseEnter={e => e.currentTarget.style.background = '#f2f6f3'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
             >
-              <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
+              <span style={{ fontSize: 10, background: '#f2f6f3', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 5px', color: 'var(--text-muted)', minWidth: 32, textAlign: 'center', fontWeight: 600 }}>
                 {m.position}
               </span>
-              <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0' }}>{m.name}</span>
-              <span style={{ fontSize: 11, color: '#4a5568' }}>{m.nationality}</span>
+              <span style={{ flex: 1, fontSize: 13, color: 'var(--ink)' }}>{m.name}</span>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{m.nationality}</span>
             </div>
           ))}
         </div>
@@ -385,10 +391,10 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
       {/* Status */}
       {status && (
         <div style={{
-          margin: '0 16px 12px', padding: '10px 14px', borderRadius: 8, fontSize: 13,
-          background: status.type === 'ok' ? '#0f2918' : status.type === 'err' ? '#1f0f0f' : '#0d1117',
-          border: `1px solid ${status.type === 'ok' ? '#1a4a2a' : status.type === 'err' ? '#4a1a1a' : '#1a2332'}`,
-          color: status.type === 'ok' ? '#4ade80' : status.type === 'err' ? '#f87171' : '#6b7280'
+          margin: '0 16px 12px', padding: '10px 14px', borderRadius: 10, fontSize: 13,
+          background: status.type === 'ok' ? 'var(--accent-soft)' : status.type === 'err' ? '#fee2e2' : 'var(--surface)',
+          border: `1px solid ${status.type === 'ok' ? '#b9e8c8' : status.type === 'err' ? '#fecaca' : 'var(--border)'}`,
+          color: status.type === 'ok' ? '#15803d' : status.type === 'err' ? '#dc2626' : 'var(--text)'
         }}>
           {status.msg}
         </div>
@@ -399,10 +405,10 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         {players.map((p, i) => (
           <button key={p} onClick={() => setViewTab(i)}
             style={{
-              background: viewTab === i ? PLAYER_COLORS[i] : '#0d1117',
-              border: `1px solid ${viewTab === i ? PLAYER_COLORS[i] : '#1a2332'}`,
-              borderRadius: 8, padding: '6px 14px', color: viewTab === i ? '#000' : '#9ca3af',
-              fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0
+              background: viewTab === i ? PLAYER_COLORS[i] : '#f2f6f3',
+              border: `1px solid ${viewTab === i ? PLAYER_COLORS[i] : 'var(--border)'}`,
+              borderRadius: 8, padding: '6px 14px', color: viewTab === i ? 'var(--ink)' : 'var(--text-muted)',
+              fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap', flexShrink: 0
             }}>
             {p} {p === myName ? '(toi)' : ''} · {(teamsByPlayer[p] || []).length}/11
           </button>
@@ -410,10 +416,10 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
         {allDone && (
           <button onClick={() => setViewTab('results')}
             style={{
-              background: viewTab === 'results' ? '#ffd700' : '#0d1117',
-              border: `1px solid ${viewTab === 'results' ? '#ffd700' : '#1a2332'}`,
-              borderRadius: 8, padding: '6px 14px', color: viewTab === 'results' ? '#000' : '#9ca3af',
-              fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0
+              background: viewTab === 'results' ? '#ffd700' : '#f2f6f3',
+              border: `1px solid ${viewTab === 'results' ? '#ffd700' : 'var(--border)'}`,
+              borderRadius: 8, padding: '6px 14px', color: viewTab === 'results' ? 'var(--ink)' : 'var(--text-muted)',
+              fontSize: 12, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0
             }}>
             🏆 Résultats
           </button>
@@ -435,8 +441,8 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
 
       {/* Pitch + player list */}
       {viewTab !== 'results' && (
-        <div style={{ padding: '0 16px 24px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'start' }}>
-          <div style={{ borderRadius: 10, overflow: 'hidden', border: '1px solid #1a2332' }}>
+        <div className="draft-grid" style={{ padding: '0 16px 24px' }}>
+          <div style={{ borderRadius: 14, overflow: 'hidden', boxShadow: 'var(--shadow)' }}>
             <FootballPitch
               team={teamsByPlayer[players[viewTab]] || []}
               color={PLAYER_COLORS[viewTab]}
@@ -446,32 +452,32 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
             />
           </div>
 
-          <div>
-            <p style={{ fontSize: 11, color: '#4a5568', marginBottom: 8, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 14, padding: '14px 16px', boxShadow: 'var(--shadow)' }}>
+            <p className="label-mono" style={{ marginBottom: 10 }}>
               Équipe de {players[viewTab]}
             </p>
             {(teamsByPlayer[players[viewTab]] || []).length === 0 && (
-              <p style={{ fontSize: 13, color: '#2d3748', fontStyle: 'italic' }}>Aucun joueur encore</p>
+              <p style={{ fontSize: 13, color: 'var(--text-muted)', fontStyle: 'italic' }}>Aucun joueur encore</p>
             )}
             {(teamsByPlayer[players[viewTab]] || []).map((entry, i) => {
               const isMyPick = entry.picked_by === myName
               const isEditing = editingPosId === entry.id
               return (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid #0f1923' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                   {isMyPick ? (
                     <div style={{ position: 'relative', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
                       <span
                         onClick={() => setEditingPosId(isEditing ? null : entry.id)}
                         title="Changer le poste"
-                        style={{ fontSize: 10, background: isEditing ? '#1e3a5f' : '#1a2332', border: `1px solid ${isEditing ? myColor + '88' : '#3d5a80'}`, borderRadius: 4, padding: '2px 5px', color: isEditing ? myColor : '#93c5fd', minWidth: 30, textAlign: 'center', fontWeight: 600, cursor: 'pointer', display: 'block', userSelect: 'none' }}>
+                        style={{ fontSize: 10, background: isEditing ? 'var(--accent-soft)' : '#f2f6f3', border: `1px solid ${isEditing ? myColor + '88' : 'var(--border)'}`, borderRadius: 4, padding: '2px 5px', color: isEditing ? myColor : 'var(--ink-soft)', minWidth: 30, textAlign: 'center', fontWeight: 600, cursor: 'pointer', display: 'block', userSelect: 'none' }}>
                         {entry.position}
                       </span>
                       {isEditing && (
-                        <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: '#0d1117', border: '1px solid #2d3748', borderRadius: 8, padding: '4px 0', minWidth: 76, boxShadow: '0 8px 24px rgba(0,0,0,0.7)' }}>
+                        <div style={{ position: 'absolute', top: '110%', left: 0, zIndex: 50, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 10, padding: '4px 0', minWidth: 76, boxShadow: '0 12px 32px rgba(13,35,24,0.18)' }}>
                           {ALL_POSITIONS.map(pos => (
                             <div key={pos}
                               onClick={() => { onUpdatePos(entry.id, pos); setEditingPosId(null) }}
-                              style={{ padding: '5px 12px', fontSize: 12, color: pos === entry.position ? myColor : '#9ca3af', cursor: 'pointer', fontWeight: pos === entry.position ? 700 : 400, background: pos === entry.position ? myColor + '18' : 'transparent' }}>
+                              style={{ padding: '5px 12px', fontSize: 12, color: pos === entry.position ? myColor : 'var(--text)', cursor: 'pointer', fontWeight: pos === entry.position ? 700 : 400, background: pos === entry.position ? myColor + '18' : 'transparent' }}>
                               {pos}
                             </div>
                           ))}
@@ -479,14 +485,14 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
                       )}
                     </div>
                   ) : (
-                    <span style={{ fontSize: 10, background: '#1a2332', border: '1px solid #2d3748', borderRadius: 4, padding: '2px 5px', color: '#6b7280', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
+                    <span style={{ fontSize: 10, background: '#f2f6f3', border: '1px solid var(--border)', borderRadius: 4, padding: '2px 5px', color: 'var(--text-muted)', minWidth: 30, textAlign: 'center', fontWeight: 600, flexShrink: 0 }}>
                       {entry.position}
                     </span>
                   )}
-                  <span style={{ flex: 1, fontSize: 13, color: '#e2e8f0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ flex: 1, fontSize: 13, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {entry.player_name}
                   </span>
-                  <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#f59e0b' : '#4a5568' }}>
+                  <span style={{ fontSize: 10, color: (globalNatCount[entry.nationality] || 0) >= MAX_NAT ? '#b45309' : 'var(--text-muted)' }}>
                     {entry.nationality}
                   </span>
                 </div>
@@ -503,25 +509,26 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
           bottom: 0,
           left: 0,
           right: 0,
-          background: 'linear-gradient(to top, #0d1117 0%, #0d1117ee 80%, transparent 100%)',
+          background: 'linear-gradient(to top, #eef3ef 0%, #eef3efee 80%, transparent 100%)',
           padding: '24px 16px 16px',
           zIndex: 100,
         }}>
           <div style={{
-            background: myColor + '22',
-            border: `1px solid ${myColor}44`,
-            borderRadius: 12,
+            background: 'var(--surface)',
+            border: `1px solid ${myColor}55`,
+            borderRadius: 14,
             padding: '12px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 12,
+            boxShadow: '0 12px 32px rgba(13,35,24,0.15)',
           }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: '#fff', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <p style={{ margin: 0, fontSize: 15, fontWeight: 600, color: 'var(--ink)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {pendingPick.name}
               </p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: '#9ca3af' }}>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
                 {pendingPick.position} · {pendingPick.nationality}
               </p>
             </div>
@@ -529,14 +536,13 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
               <button
                 onClick={cancelPendingPick}
                 style={{
-                  background: '#1f0f0f',
-                  border: '1px solid #4a1a1a',
+                  background: '#fee2e2',
+                  border: '1px solid #fecaca',
                   borderRadius: 8,
                   padding: '10px 16px',
-                  color: '#f87171',
+                  color: '#dc2626',
                   fontSize: 14,
                   fontWeight: 600,
-                  cursor: 'pointer',
                 }}
               >
                 ❌ Annuler
@@ -549,10 +555,9 @@ export default function Draft({ session, picks, onPick, onEnd, ratings = [], onR
                   border: 'none',
                   borderRadius: 8,
                   padding: '10px 16px',
-                  color: '#000',
+                  color: 'var(--ink)',
                   fontSize: 14,
                   fontWeight: 700,
-                  cursor: 'pointer',
                   opacity: loading ? 0.5 : 1,
                 }}
               >

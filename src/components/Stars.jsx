@@ -15,7 +15,7 @@ export default function Stars({ value, onChange, disabled, size = 18 }) {
             cursor: disabled ? 'default' : 'pointer',
             fontSize: size,
             lineHeight: 1,
-            color: n <= display ? '#f59e0b' : '#374151',
+            color: n <= display ? '#f59e0b' : '#d8e2db',
             userSelect: 'none'
           }}
         >

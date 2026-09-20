@@ -1,6 +1,6 @@
 # Draft CDM 2026 ⚽
 
-Jeu de draft en temps réel — construisez votre XI CDM 2026 avec vos amis.
+Jeu de draft en temps réel : construisez votre XI CDM 2026 avec vos amis.
 
 ## Stack
 - React + Vite (frontend)

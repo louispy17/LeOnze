@@ -21,8 +21,8 @@ export default function CoachAvatar({ coachId, size = 24 }) {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    background: '#1a2332',
-    border: '1px solid #2d3748',
+    background: '#f2f6f3',
+    border: '1px solid var(--border)',
   }
 
   if (coach.emoji) {
@@ -47,7 +47,7 @@ export default function CoachAvatar({ coachId, size = 24 }) {
   }
 
   return (
-    <div style={{ ...containerStyle, fontSize: size * 0.4, fontWeight: 700, color: '#9ca3af' }}>
+    <div style={{ ...containerStyle, fontSize: size * 0.4, fontWeight: 700, color: 'var(--text-muted)' }}>
       {getCoachInitials(coach.name)}
     </div>
   )
