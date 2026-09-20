@@ -5,18 +5,18 @@ function buildSteps(competition) {
   return [
     {
       emoji: '🏆',
-      title: "Le but ? Prouver que t'as le meilleur goût foot",
-      desc: `Chacun draft son XI de rêve avec les stars de ${competition.poolLabel}. Une fois les équipes bouclées, ce sont tes potes qui notent chaque pick. Meilleure moyenne, meilleur onze.`,
+      title: "Le but ? Monte la meilleure équipe possible en draftant tes joueurs",
+      desc: `Choisis parmi les joueurs dispos de ${competition.poolLabel}, pas que des stars : une pépite ou un tempérament bien placé, ça compte tout autant. Une fois les onze bouclés, toi et tes potes votez pour élire la meilleure équipe de la partie.`,
     },
     {
       emoji: '🔄',
       title: 'Chacun son tour, un pick à la fois',
-      desc: "L'ordre s'inverse à chaque round (1→2→3→4→4→3→2→1...), donc pas toujours le même sens. Un joueur pris ? Il disparaît du pool pour tout le monde, alors dégaine vite.",
+      desc: "C'est un draft en serpentin : l'ordre s'inverse à chaque round (1→2→3→4→4→3→2→1...). Un joueur pris ? Il disparaît du pool pour tout le monde, alors dégaine vite.",
     },
     {
       emoji: '🛂',
       title: 'Ton pick peut être recalé, voici pourquoi',
-      desc: `Seuls les vrais joueurs de ${competition.poolLabel} sont valides. Et max 2 joueurs par ${competition.groupLabel} sur tout le draft, pas que ton équipe : impossible de rafler toute une sélection.`,
+      desc: `Un joueur pris par quelqu'un devient indisponible pour toute la partie, même pour les autres équipes. Et jamais plus de 2 joueurs du même ${competition.groupLabel}, tous onze confondus.`,
     },
     {
       emoji: '🤝',
